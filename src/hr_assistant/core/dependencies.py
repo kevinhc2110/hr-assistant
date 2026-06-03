@@ -7,6 +7,7 @@ from src.hr_assistant.infrastructure.embeddings.gemini_embeddings import GeminiE
 from src.hr_assistant.infrastructure.llm.gemini_provider import GeminiProvider
 from src.hr_assistant.core.config import settings
 from src.hr_assistant.infrastructure.repositories.document_repository import DocumentRepository
+from src.hr_assistant.infrastructure.vectorstore.in_memory_store import InMemoryStore
 
 
 def get_llm_provider():
@@ -42,3 +43,8 @@ def get_embedding_provider():
         api_key=settings.gemini_api_key,
         model=settings.gemini_embedding_model,
     )
+
+vector_store = InMemoryStore()
+
+def get_vector_store():
+    return vector_store
