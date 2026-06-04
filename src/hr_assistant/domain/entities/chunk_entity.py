@@ -2,16 +2,16 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Document:
+class DocumentChunk:
     def __init__(
         self,
         id: str,
-        filename: str,
+        document_id: str,
         content: str,
-        created_at: str,
+        index: int,
     ):
         self.id = id
-        self.filename = filename
+        self.document_id = document_id
         self.content = content
-        self.created_at = created_at
-        
+        self.index = index
+    

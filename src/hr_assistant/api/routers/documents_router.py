@@ -3,7 +3,8 @@ from fastapi import Depends
 from fastapi import UploadFile
 from fastapi import File
 
-from src.hr_assistant.core.dependencies import get_ingest_document_use_case
+from src.hr_assistant.core.dependencies import get_ingest_document_use_case, get_vector_store
+from src.hr_assistant.infrastructure.vectorstore.in_memory_store import InMemoryStore
 
 router = APIRouter(
     prefix="/documents",
@@ -23,5 +24,13 @@ async def upload_document(
     )
 
     return {
+        "id": document.id,
         "filename": document.filename
+    }
+
+@router.get("/debug/vectors")
+async def debug_vectors(vector_store: InMemoryStore = Depends(get_vector_store)):
+    return {
+        "count": len(vector_store.vectors),
+        "items": vector_store.vectors[:5]
     }

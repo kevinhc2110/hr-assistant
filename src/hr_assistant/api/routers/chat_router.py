@@ -30,17 +30,3 @@ async def chat(
         answer=answer
     )
 
-@router.get("/test-embedding")
-async def test_embedding(
-    embedding_provider = Depends(
-        get_embedding_provider
-    )
-):
-
-    embedding = await embedding_provider.embed(
-        "Vacaciones"
-    )
-
-    return {
-        "dimensions": len(embedding)
-    }
