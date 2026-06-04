@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     gemini_model: str
     gemini_embedding_model: str
 
+    postgres_dsn: str
+
+    postgres_user: str
+    postgres_password: str
+    postgres_db: str
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -4,11 +4,12 @@ from fastapi import Depends
 from src.hr_assistant.application.use_cases.chat_use_case import ChatUseCase
 from src.hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
 from src.hr_assistant.application.use_cases.retrieve_context_use_case import RetrieveContextUseCase
+from src.hr_assistant.infrastructure.database.postgres import PostgresDatabase
 from src.hr_assistant.infrastructure.embeddings.gemini_embeddings import GeminiEmbeddings
 from src.hr_assistant.infrastructure.llm.gemini_provider import GeminiProvider
 from src.hr_assistant.core.config import settings
 from src.hr_assistant.infrastructure.repositories.document_repository import DocumentRepository
-from src.hr_assistant.infrastructure.vectorstore.in_memory_store import InMemoryStore
+from src.hr_assistant.infrastructure.vectorstore.pgvector_store import PGVectorStore
 
 
 def get_llm_provider():
@@ -18,9 +19,16 @@ def get_llm_provider():
         model=settings.gemini_model,
     )
 
+database = PostgresDatabase(
+    dsn=settings.postgres_dsn
+)
+
+def get_database():
+    return database
+
 
 def get_document_repository():
-    return DocumentRepository()
+    return DocumentRepository(db=get_database())
 
 def get_embedding_provider():
 
@@ -29,7 +37,9 @@ def get_embedding_provider():
         model=settings.gemini_embedding_model,
     )
 
-vector_store = InMemoryStore()
+vector_store = PGVectorStore(
+    pool=None
+)
 
 def get_vector_store():
     return vector_store

@@ -3,8 +3,7 @@ from fastapi import Depends
 from fastapi import UploadFile
 from fastapi import File
 
-from src.hr_assistant.core.dependencies import get_ingest_document_use_case, get_vector_store
-from src.hr_assistant.infrastructure.vectorstore.in_memory_store import InMemoryStore
+from src.hr_assistant.core.dependencies import get_ingest_document_use_case
 
 router = APIRouter(
     prefix="/documents",

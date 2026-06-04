@@ -1,6 +1,6 @@
 # AGENTS.md — hr-assistant
 
-FastAPI RAG chatbot (Google Gemini) managed with Poetry.
+FastAPI RAG chatbot (Google Gemini) with PostgreSQL + pgvector, managed with Poetry.
 
 ## Commands
 
@@ -14,32 +14,34 @@ No test runner, no linter, no type checker, no pre-commit, no CI configured.
 
 ## Architecture
 
-```text
+```
 src/hr_assistant/
-├── main.py                            # FastAPI app entrypoint
+├── main.py                            # FastAPI app entrypoint + lifespan (DB connect/disconnect)
 ├── api/routers/                       # FastAPI routers
 │   ├── chat_router.py                 # POST /chat
 │   └── documents_router.py            # POST /documents/upload
 ├── api/schemas/                       # Pydantic request/response schemas
 ├── application/use_cases/             # Business logic (chat, ingest, retrieve_context)
-├── domain/entities/                   # Domain models
+├── domain/entities/                   # document_entity.py (only Document model remains)
 ├── infrastructure/
+│   ├── database/postgres.py           # asyncpg connection pool
 │   ├── llm/                           # base.py + gemini_provider.py
 │   ├── embeddings/                    # base.py + gemini_embeddings.py
-│   ├── vectorstore/                   # base.py + in_memory_store.PY + pgvector_store.py (stub)
-│   └── repositories/                  # document_repository.py
+│   ├── vectorstore/                   # base.py + models.py + pgvector_store.py
+│   └── repositories/                  # document_repository.py (writes to PostgreSQL)
 └── core/
     ├── config.py                      # pydantic-settings from .env
     └── dependencies.py                # FastAPI Depends() wiring
+examples/sample_company_policy.txt     # sample document for testing
 tests/unit/ and tests/integration/     # empty stubs
 ```
 
 ## Quirks & gotchas
 
 - **All internal imports use `src.hr_assistant.` prefix** (e.g., `from src.hr_assistant.api.routers...`). Do not use relative imports.
-- **`in_memory_store.PY`** has uppercase `.PY` extension. Imports reference `in_memory_store` (lowercase) — works on case-insensitive FS, **breaks on Linux**.
-- **pgvector_store.py is a stub** — only `pass` methods, not wired in. The active vector store is `InMemoryStore` (singleton in `dependencies.py`).
-- **Config**: Required env vars: `gemini_api_key`, `gemini_model`, `gemini_embedding_model`. Loaded from `.env` via pydantic-settings.
-- **README is a roadmap** (planned Fases 1–6), not documentation of the current state. Trust the source code.
+- **PostgreSQL + pgvector required** — the in-memory store was removed. You need a running Postgres with the `vector` extension and the `documents`/`chunks` tables created (see README for DDL).
+- **Pool injected at startup** — `PostgresDatabase` creates an `asyncpg` pool in the FastAPI `lifespan` handler. The pool is then injected into `PGVectorStore.pool` before any request arrives.
+- **Config**: Required env vars: `gemini_api_key`, `gemini_model`, `gemini_embedding_model`, `postgres_dsn`, `postgres_user`, `postgres_password`, `postgres_db`. Loaded from `.env` via pydantic-settings.
+- **README is authoritative** (no longer a roadmap) — reflects the current PostgreSQL-backed code.
 - **Tests**: No test files exist; `tests/unit/` and `tests/integration/` are empty.
 - **Live API key in `.env`** — committed to git (security concern).

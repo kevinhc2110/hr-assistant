@@ -3,15 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Document:
-    def __init__(
-        self,
-        id: str,
-        filename: str,
-        content: str,
-        created_at: str,
-    ):
-        self.id = id
-        self.filename = filename
-        self.content = content
-        self.created_at = created_at
+    id: str
+    filename: str
+    created_at: str
         
