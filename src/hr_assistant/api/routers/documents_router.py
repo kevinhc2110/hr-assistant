@@ -27,10 +27,3 @@ async def upload_document(
         "id": document.id,
         "filename": document.filename
     }
-
-@router.get("/debug/vectors")
-async def debug_vectors(vector_store: InMemoryStore = Depends(get_vector_store)):
-    return {
-        "count": len(vector_store.vectors),
-        "items": vector_store.vectors[:5]
-    }
