@@ -4,21 +4,21 @@ from fastapi import FastAPI
 from src.hr_assistant.api.routers.chat_router import router as chat_router
 from src.hr_assistant.api.routers.documents_router import router as document_router
 from src.hr_assistant.core.config import settings
-from src.hr_assistant.core.dependencies import database
-from src.hr_assistant.core.dependencies import vector_store
+from src.hr_assistant.infrastructure.database.postgres import PostgresDatabase
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    await database.connect()
+    db = PostgresDatabase(dsn=settings.postgres_dsn)
+    await db.connect()
 
-    vector_store.pool = database.pool
+    app.state.db = db
 
     yield
 
-    await database.disconnect()
-
-
+    await db.disconnect()
+    
 app = FastAPI(
     title=settings.app_name,
     lifespan=lifespan

@@ -10,22 +10,17 @@ class DocumentRepository:
         self,
         document: Document,
     ):
-        async with self.db.pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO documents (
-                    id,
-                    filename,
-                    created_at
-                )
-                VALUES (
-                    $1,
-                    $2,
-                    $3
-                )
-                """,
-                document.id,
-                document.filename,
-                document.created_at
+        await self.db.pool.execute(
+            """
+            INSERT INTO documents (
+                id,
+                filename,
+                created_at
             )
+            VALUES ($1, $2, $3)
+            """,
+            document.id,
+            document.filename,
+            document.created_at
+        )
 

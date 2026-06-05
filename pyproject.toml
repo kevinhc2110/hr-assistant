@@ -6,7 +6,7 @@ authors = [
     {name = "Kevin Herrera",email = "114835840+kevinhc2110@users.noreply.github.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13, <4.0.0"
 dependencies = [
     "fastapi (>=0.136.3,<0.137.0)",
     "uvicorn (>=0.48.0,<0.49.0)",
@@ -16,9 +16,12 @@ dependencies = [
     "numpy (>=2.4.6,<3.0.0)",
     "google-genai (>=2.8.0,<3.0.0)",
     "asyncpg (>=0.31.0,<0.32.0)",
-    "sqlmodel (>=0.0.38,<0.0.39)",
-    "sqlalchemy (>=2.0.50,<3.0.0)",
-    "alembic (>=1.18.4,<2.0.0)",
+    "pgvector (>=0.4.2,<0.5.0)",
+    "llama-index-core (>=0.14.22,<0.15.0)",
+    "llama-index-readers-file (>=0.6.0,<0.7.0)",
+    "pymupdf (>=1.27.2.3,<2.0.0.0)",
+    "python-docx (>=1.2.0,<2.0.0)",
+    "openpyxl (>=3.1.5,<4.0.0)"
 ]
 
 [tool.poetry]
