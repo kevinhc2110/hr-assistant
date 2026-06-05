@@ -1,25 +1,28 @@
 # HR Assistant
 
-RAG-powered HR chatbot built with FastAPI and Google Gemini. Upload company documents (policies, benefits, procedures) and ask natural-language questions — the system retrieves relevant context from a PostgreSQL + pgvector database and generates accurate answers.
+RAG-powered HR chatbot built with FastAPI and Google Gemini. Upload company documents (policies, benefits, procedures) in multiple formats and ask natural-language questions via WebSocket — the system retrieves relevant context from a PostgreSQL + pgvector database and generates accurate answers with full conversation history.
 
 ## Features
 
-- **RAG Chat** — Ask HR-related questions; the system retrieves the top-5 relevant document chunks and answers with context.
-- **Document Ingestion** — Upload text files (`.txt`); content is chunked, embedded via Gemini, and stored in PostgreSQL with pgvector for semantic search.
-- **Persistent Storage** — Documents and embeddings are persisted in PostgreSQL (no data loss on restart).
+- **RAG Chat via WebSocket** — Ask HR-related questions over WebSocket; the system retrieves the top-5 relevant document chunks and answers with context from the conversation history.
+- **Multi-Format Document Ingestion** — Upload `.txt`, `.pdf`, `.docx`, `.csv`, or `.xlsx`/`.xls` files. Content is parsed via LlamaIndex readers, chunked (500 chars with 50 overlap), embedded via Gemini, and stored in PostgreSQL with pgvector.
+- **Conversation History** — Every chat session is persisted: user questions and assistant answers are stored as `messages` linked to a `conversation`, enabling multi-turn awareness.
+- **Conversation Management** — List all conversations by user and view message history per conversation via REST endpoints.
+- **Persistent Storage** — Documents, embeddings, conversations, and messages are persisted in PostgreSQL (no data loss on restart).
 - **Sample Document** — A ready-to-use example policy file at `examples/sample_company_policy.txt`.
 
 ## Tech Stack
 
-| Layer            | Technology                                                                                                                   |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Framework        | [FastAPI](https://fastapi.tiangolo.com/)                                                                                     |
-| LLM              | Google Gemini (via `google-genai`)                                                                                           |
-| Embeddings       | Gemini Embedding API                                                                                                         |
-| Vector Store     | [PostgreSQL](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) (cosine distance via `asyncpg`) |
-| Config           | `pydantic-settings` + `.env`                                                                                                 |
-| Package Manager  | [Poetry](https://python-poetry.org/) (Python >=3.13)                                                                         |
-| Containerization | [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/)                                       |
+| Layer            | Technology                                                                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework        | [FastAPI](https://fastapi.tiangolo.com/)                                                                                                  |
+| LLM              | Google Gemini (via `google-genai`)                                                                                                        |
+| Embeddings       | Gemini Embedding API                                                                                                                      |
+| Vector Store     | [PostgreSQL 17](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) (cosine distance via `asyncpg`)           |
+| Document Parsing | [LlamaIndex](https://www.llamaindex.ai/) (`llama-index-core` + `llama-index-readers-file`), `PyMuPDF`, `python-docx`, `pandas`/`openpyxl` |
+| Config           | `pydantic-settings` + `.env`                                                                                                              |
+| Package Manager  | [Poetry](https://python-poetry.org/) (Python >=3.13)                                                                                      |
+| Containerization | [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/) (uses `pgvector/pgvector:pg17`)                    |
 
 ## Prerequisites
 
@@ -35,10 +38,11 @@ cd hr-assistant
 
 cp .env.example .env
 # Edit .env with your credentials:
+#   app_name=AI RRHH Chatbot
 #   gemini_api_key=your-key-here
-#   gemini_model=gemini-2.0-flash-lite
+#   gemini_model=gemini-3.1-flash-lite
 #   gemini_embedding_model=gemini-embedding-2
-#   postgres_dsn=postgresql://kevinhc2110:password@db:5432/hr_assistant
+#   postgres_dsn=postgresql://user:password@db:5432/hr_assistant
 #   postgres_user=user
 #   postgres_password=password
 #   postgres_db=hr_assistant
@@ -50,7 +54,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-This starts both PostgreSQL (with pgvector) and the app. The API is available at `http://localhost:8000`.
+This starts both PostgreSQL 17 (with pgvector) and the app. The API is available at `http://localhost:8000`.
 
 Stop with:
 
@@ -71,7 +75,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ```
 
-The tables are created automatically by the `db/init.sql` script. Alternatively, run the SQL manually (see `db/init.sql`).
+The tables are created automatically by the `db/init.sql` script (mounted to `docker-entrypoint-initdb.d` in Docker). Alternatively, run the SQL manually (see `db/init.sql`).
 
 - Update `.env` so `postgres_dsn` points to `localhost` instead of `db`:
 
@@ -90,43 +94,55 @@ The API is available at `http://localhost:8000`. Open `http://localhost:8000/doc
 
 ## API Endpoints
 
-| Method | Path                | Description                           |
-| ------ | ------------------- | ------------------------------------- |
-| `POST` | `/chat`             | Send a message and get an HR response |
-| `POST` | `/documents/upload` | Upload a `.txt` file for ingestion    |
+| Method | Path                  | Description                                                     |
+| ------ | --------------------- | --------------------------------------------------------------- |
+| `WS`   | `/chat/ws`            | WebSocket chat — send messages, receive answers                 |
+| `GET`  | `/chat/conversations` | List conversations by `user_id`                                 |
+| `GET`  | `/chat/messages`      | List messages for a `conversation_id`                           |
+| `POST` | `/documents/upload`   | Upload a file (`.txt`, `.pdf`, `.docx`, `.csv`, `.xlsx`/`.xls`) |
 
-### Try it out
+### Chat via WebSocket
 
-Upload the sample document, then ask questions:
+Connect to `ws://localhost:8000/chat/ws` and exchange JSON messages:
 
-```sh
-# 1. Ingest the sample policy file
-curl -X POST http://localhost:8000/documents/upload \
-  -F "file=@examples/sample_company_policy.txt"
+**Send:**
 
-# 2. Ask questions
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "¿Cuántos días de vacaciones tengo?"}'
-
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "¿Cuál es la política de trabajo remoto?"}'
-
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "¿La empresa ofrece licencia de paternidad o maternidad?"}'
-
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "¿Qué planes de seguro de salud están disponibles?"}'
-
-curl -X POST http://localhost:8000/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "¿Cuál es el presupuesto anual de capacitación?"}'
+```json
+{ "message": "¿Cuántos días de vacaciones tengo?" }
 ```
 
-### Example questions the sample document can answer
+Or continue an existing conversation:
+
+```json
+{ "message": "¿Puedo acumularlos?", "conversation_id": "<uuid>" }
+```
+
+**Receive:**
+
+```json
+{ "answer": "...", "conversation_id": "<uuid>" }
+```
+
+### Conversation & Message History
+
+```sh
+# List conversations
+curl "http://localhost:8000/chat/conversations?user_id=00000000-0000-0000-0000-000000000000"
+
+# List messages in a conversation
+curl "http://localhost:8000/chat/messages?conversation_id=<uuid>"
+```
+
+### Upload a document
+
+```sh
+curl -X POST http://localhost:8000/documents/upload \
+  -F "file=@examples/sample_company_policy.txt"
+```
+
+Supported formats: `.txt`, `.pdf`, `.docx`, `.csv`, `.xlsx`, `.xls`.
+
+### Example questions (spanish)
 
 - ¿Cuántos días de vacaciones tienen los empleados por año?
 - ¿Puedo acumular los días de vacaciones no utilizados para el próximo año?
@@ -139,6 +155,57 @@ curl -X POST http://localhost:8000/chat \
 - ¿Existe un presupuesto de capacitación para cursos y conferencias?
 - ¿Qué sucede si incumplo el Código de Conducta?
 
+## Database Schema
+
+Five tables are created by `db/init.sql`:
+
+### `users`
+
+| Column       | Type        | Notes                                  |
+| ------------ | ----------- | -------------------------------------- |
+| `id`         | UUID (PK)   | Auto-generated via `gen_random_uuid()` |
+| `email`      | TEXT        |                                        |
+| `password`   | TEXT        | Hashed                                 |
+| `created_at` | TIMESTAMPTZ | Default `NOW()`                        |
+
+A seed anonymous user (`00000000-0000-0000-0000-000000000000`) is inserted on setup.
+
+### `conversations`
+
+| Column       | Type        | Notes                  |
+| ------------ | ----------- | ---------------------- |
+| `id`         | UUID (PK)   |                        |
+| `user_id`    | UUID (FK)   | References `users(id)` |
+| `created_at` | TIMESTAMPTZ |                        |
+
+### `messages`
+
+| Column            | Type        | Notes                                        |
+| ----------------- | ----------- | -------------------------------------------- |
+| `id`              | UUID (PK)   |                                              |
+| `conversation_id` | UUID (FK)   | References `conversations(id)`               |
+| `role`            | TEXT        | `'user'` or `'assistant'` (CHECK constraint) |
+| `content`         | TEXT        |                                              |
+| `created_at`      | TIMESTAMPTZ |                                              |
+
+### `documents`
+
+| Column       | Type        | Notes |
+| ------------ | ----------- | ----- |
+| `id`         | UUID (PK)   |       |
+| `filename`   | TEXT        |       |
+| `created_at` | TIMESTAMPTZ |       |
+
+### `chunks`
+
+| Column        | Type           | Notes                                        |
+| ------------- | -------------- | -------------------------------------------- |
+| `id`          | UUID (PK)      |                                              |
+| `document_id` | UUID (FK)      | References `documents(id)` ON DELETE CASCADE |
+| `content`     | TEXT           | Chunk text (500 chars)                       |
+| `embedding`   | `vector(3072)` | Gemini embedding                             |
+| `metadata`    | JSONB          | `{filename, chunk_index, source_type, ...}`  |
+
 ## Project Structure
 
 ```text
@@ -146,26 +213,55 @@ hr-assistant/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .dockerignore
+├── .gitignore
+├── AGENTS.md                              # AI agent instructions
+├── LICENSE
+├── pyproject.toml
+├── poetry.lock
 ├── db/
-│   └── init.sql                          # DB schema (tables + pgvector index)
+│   └── init.sql                           # DB schema (5 tables + pgvector index)
 ├── examples/
 │   └── sample_company_policy.txt
 ├── src/hr_assistant/
-│   ├── main.py                        # FastAPI app entrypoint + lifespan (DB connect)
+│   ├── __init__.py
+│   ├── main.py                            # FastAPI entrypoint + lifespan (DB connect)
 │   ├── api/
-│   │   ├── routers/                   # chat_router.py, documents_router.py
-│   │   └── schemas/                   # Pydantic request/response models
-│   ├── application/use_cases/         # Business logic (chat, ingest, retrieve context)
-│   ├── domain/entities/               # Domain models (Document)
+│   │   ├── routers/
+│   │   │   ├── chat_router.py             # WS /chat/ws, GET /chat/conversations, GET /chat/messages
+│   │   │   └── documents_router.py        # POST /documents/upload
+│   │   └── schemas/
+│   │       ├── chat_schema.py             # Chat/Conversation/Message Pydantic models
+│   │       └── document_schema.py         # Upload response model
+│   ├── application/use_cases/
+│   │   ├── chat_use_case.py               # Chat orchestration with history
+│   │   ├── conversations_use_case.py      # List conversations
+│   │   ├── ingest_document_use_case.py    # Multi-format ingestion + chunking
+│   │   ├── messages_use_case.py           # List messages
+│   │   └── retrieve_context_use_case.py   # Vector search context retrieval
+│   ├── domain/entities/
+│   │   ├── conversation_entity.py         # Conversation dataclass
+│   │   ├── document_entity.py             # Document dataclass
+│   │   └── message_entity.py              # Message dataclass
 │   ├── infrastructure/
-│   │   ├── database/                  # PostgresDatabase (asyncpg pool)
-│   │   ├── llm/                       # Gemini LLM provider
-│   │   ├── embeddings/                # Gemini embedding provider
-│   │   ├── vectorstore/               # PGVectorStore (pgvector cosine search)
-│   │   └── repositories/              # Document repository (PostgreSQL)
+│   │   ├── database/
+│   │   │   ├── base.py                    # Database ABC (connect/disconnect/execute/fetch)
+│   │   │   └── postgres.py                # asyncpg pool implementation
+│   │   ├── llm/
+│   │   │   ├── base.py                    # LLMProvider ABC
+│   │   │   └── gemini_provider.py         # Gemini LLM implementation
+│   │   ├── embeddings/
+│   │   │   ├── base.py                    # EmbeddingProvider ABC
+│   │   │   └── gemini_embeddings.py       # Gemini embedding implementation
+│   │   ├── vectorstore/
+│   │   │   ├── base.py                    # VectorStore ABC
+│   │   │   ├── models.py                  # Vector store data models
+│   │   │   └── pgvector_store.py          # pgvector cosine search implementation
+│   │   └── repositories/
+│   │       ├── chat_repository.py         # Conversations + messages persistence
+│   │       └── document_repository.py     # Document persistence
 │   └── core/
-│       ├── config.py                  # pydantic-settings from .env
-│       └── dependencies.py            # FastAPI Depends() wiring
+│       ├── config.py                      # pydantic-settings from .env
+│       └── dependencies.py                # FastAPI Depends() wiring
 ```
 
 ## License

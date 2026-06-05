@@ -71,7 +71,6 @@ async def chat_websocket(
     try:
         while True:
             data = await websocket.receive_json()
-            # Espera: {"message": "...", "conversation_id": "..." (opcional)}
 
             question = data.get("message", "").strip()
             conversation_id = data.get("conversation_id") or conversation_id
@@ -96,23 +95,3 @@ async def chat_websocket(
         pass
 
 
-# @router.post(
-#     "",
-#     response_model=ChatResponse,
-# )
-# async def chat(
-#     request: ChatRequest,
-#     use_case: ChatUseCase = Depends(
-#         get_chat_use_case 
-#     ),
-# ):
-
-#     answer = await use_case.execute(
-#         user_id=request.coversation_id,
-#         question=request.message
-#     )
-
-#     return ChatResponse(
-#         answer=answer["answer"],
-#         conversation_id=answer["conversation_id"]
-#     )
