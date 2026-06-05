@@ -38,15 +38,13 @@ class IngestDocumentUseCase:
         await self.document_repository.save_document(document)
 
         nodes = await self._load_nodes(file)
-
         nodes = [n for n in nodes if n.text and n.text.strip()]
 
-        for index, node in enumerate(nodes):
+        embeddings = await self.embedding_provider.embed_batch(
+            [n.text for n in nodes]
+        )
 
-            embedding = await self.embedding_provider.embed(
-                node.text
-            )
-
+        for index, (node, embedding) in enumerate(zip(nodes, embeddings)):
             await self.vector_store.add(
                 document_id=document.id,
                 content=node.text,
@@ -54,9 +52,7 @@ class IngestDocumentUseCase:
                 metadata={
                     "filename": document.filename,
                     "chunk_index": index,
-                    "source_type": Path(
-                         document.filename
-                    ).suffix.lower(),
+                    "source_type": Path(document.filename).suffix.lower(),
                     **(node.metadata or {})
                 },
             )

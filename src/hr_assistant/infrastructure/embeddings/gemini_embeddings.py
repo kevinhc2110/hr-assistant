@@ -28,3 +28,13 @@ class GeminiEmbeddings(
         )
 
         return response.embeddings[0].values
+    
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
+        response = await anyio.to_thread.run_sync(
+            lambda: self.client.models.embed_content(
+                model=self.model,
+                contents=texts,
+            )
+        )
+
+        return [e.values for e in response.embeddings]
