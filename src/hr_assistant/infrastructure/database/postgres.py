@@ -13,10 +13,9 @@ class PostgresDatabase(Database):
 
     async def connect(self):
         self.pool = await asyncpg.create_pool(
-            dsn=self.dsn
+            dsn=self.dsn,
+            init=register_vector
         )
-        async with self.pool.acquire() as conn:
-            await register_vector(conn)
 
     async def disconnect(self):
         await self.pool.close()
