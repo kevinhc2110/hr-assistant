@@ -39,6 +39,8 @@ class IngestDocumentUseCase:
 
         nodes = await self._load_nodes(file)
 
+        nodes = [n for n in nodes if n.text and n.text.strip()]
+
         for index, node in enumerate(nodes):
 
             embedding = await self.embedding_provider.embed(
