@@ -11,48 +11,21 @@ RAG-powered HR chatbot built with FastAPI and Google Gemini. Upload company docu
 
 ## Tech Stack
 
-| Layer           | Technology                                                                                                                   |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Framework       | [FastAPI](https://fastapi.tiangolo.com/)                                                                                     |
-| LLM             | Google Gemini (via `google-genai`)                                                                                           |
-| Embeddings      | Gemini Embedding API                                                                                                         |
-| Vector Store    | [PostgreSQL](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) (cosine distance via `asyncpg`) |
-| Config          | `pydantic-settings` + `.env`                                                                                                 |
-| Package Manager | [Poetry](https://python-poetry.org/) (Python >=3.13)                                                                         |
+| Layer            | Technology                                                                                                                   |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Framework        | [FastAPI](https://fastapi.tiangolo.com/)                                                                                     |
+| LLM              | Google Gemini (via `google-genai`)                                                                                           |
+| Embeddings       | Gemini Embedding API                                                                                                         |
+| Vector Store     | [PostgreSQL](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) (cosine distance via `asyncpg`) |
+| Config           | `pydantic-settings` + `.env`                                                                                                 |
+| Package Manager  | [Poetry](https://python-poetry.org/) (Python >=3.13)                                                                         |
+| Containerization | [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/)                                       |
 
 ## Prerequisites
 
-- Python 3.13+
-- [Poetry](https://python-poetry.org/docs/#installation)
+- [Docker](https://docs.docker.com/engine/install/) + [Docker Compose](https://docs.docker.com/compose/install/) (recommended)
+- _Or_ Python 3.13+ with [Poetry](https://python-poetry.org/docs/#installation) and a PostgreSQL server with pgvector
 - A [Google Gemini API key](https://aistudio.google.com/apikey)
-- PostgreSQL server (with [pgvector extension](https://github.com/pgvector/pgvector#installation) enabled)
-
-### Database setup
-
-```sql
-CREATE DATABASE hr_assistant;
-CREATE EXTENSION IF NOT EXISTS vector;
-```
-
-Then create the required tables (or run migrations if Alembic is configured):
-
-```sql
-CREATE TABLE documents (
-    id UUID PRIMARY KEY,
-    filename TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL
-);
-
-CREATE TABLE chunks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    document_id UUID NOT NULL REFERENCES documents(id),
-    content TEXT NOT NULL,
-    embedding vector(768),
-    metadata JSONB
-);
-
-CREATE INDEX ON chunks USING ivfflat (embedding vector_cosine_ops);
-```
 
 ## Getting Started
 
@@ -65,14 +38,51 @@ cp .env.example .env
 #   gemini_api_key=your-key-here
 #   gemini_model=gemini-2.0-flash-lite
 #   gemini_embedding_model=gemini-embedding-2
-#   postgres_dsn=postgresql://user:password@localhost:5432/hr_assistant
-
-poetry install
+#   postgres_dsn=postgresql://kevinhc2110:password@db:5432/hr_assistant
+#   postgres_user=user
+#   postgres_password=password
+#   postgres_db=hr_assistant
 ```
 
-### Run the dev server
+### Run with Docker (recommended)
 
 ```sh
+docker compose up -d
+```
+
+This starts both PostgreSQL (with pgvector) and the app. The API is available at `http://localhost:8000`.
+
+Stop with:
+
+```sh
+docker compose down
+```
+
+### Run locally (without Docker)
+
+Prerequisites: Python 3.13+, Poetry, PostgreSQL with pgvector.
+
+- Create the database and enable pgvector:
+
+```sql
+CREATE DATABASE hr_assistant;
+\c hr_assistant
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+```
+
+The tables are created automatically by the `db/init.sql` script. Alternatively, run the SQL manually (see `db/init.sql`).
+
+- Update `.env` so `postgres_dsn` points to `localhost` instead of `db`:
+
+```env
+postgres_dsn=postgresql://kevinhc2110:password@localhost:5432/hr_assistant
+```
+
+- Install dependencies and start:
+
+```sh
+poetry install
 poetry run uvicorn src.hr_assistant.main:app --reload
 ```
 
@@ -133,6 +143,11 @@ curl -X POST http://localhost:8000/chat \
 
 ```text
 hr-assistant/
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
+├── db/
+│   └── init.sql                          # DB schema (tables + pgvector index)
 ├── examples/
 │   └── sample_company_policy.txt
 ├── src/hr_assistant/

@@ -8,16 +8,24 @@ FastAPI RAG chatbot (Google Gemini) with PostgreSQL + pgvector, managed with Poe
 poetry install                          # install deps (Python >=3.13)
 uvicorn src.hr_assistant.main:app       # dev server (run from repo root)
 poetry run uvicorn src.hr_assistant.main:app
+
+# Docker
+docker compose up -d                    # build & start app + db
+docker compose up -d --build            # rebuild & start
+docker compose down                     # stop containers
+docker compose logs -f                  # follow logs
+docker compose ps                       # check status
 ```
 
 No test runner, no linter, no type checker, no pre-commit, no CI configured.
 
 ## Architecture
 
-```
+```text
 src/hr_assistant/
 ├── main.py                            # FastAPI app entrypoint + lifespan (DB connect/disconnect)
 ├── api/routers/                       # FastAPI routers
+
 │   ├── chat_router.py                 # POST /chat
 │   └── documents_router.py            # POST /documents/upload
 ├── api/schemas/                       # Pydantic request/response schemas
