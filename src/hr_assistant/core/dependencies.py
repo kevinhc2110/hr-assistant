@@ -1,12 +1,16 @@
 
-from fastapi import Depends, Request
+from fastapi import Depends
+from starlette.requests import HTTPConnection
 
 from src.hr_assistant.application.use_cases.chat_use_case import ChatUseCase
+from src.hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
 from src.hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
+from src.hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
 from src.hr_assistant.application.use_cases.retrieve_context_use_case import RetrieveContextUseCase
 from src.hr_assistant.infrastructure.embeddings.gemini_embeddings import GeminiEmbeddings
 from src.hr_assistant.infrastructure.llm.gemini_provider import GeminiProvider
 from src.hr_assistant.core.config import settings
+from src.hr_assistant.infrastructure.repositories.chat_repository import ChatRepository
 from src.hr_assistant.infrastructure.repositories.document_repository import DocumentRepository
 from src.hr_assistant.infrastructure.vectorstore.pgvector_store import PGVectorStore
 
@@ -19,12 +23,15 @@ llm_provider = GeminiProvider(
 def get_llm_provider():
     return llm_provider
     
-def get_database(request: Request):
+def get_database(request: HTTPConnection):
     return request.app.state.db
 
 
 def get_document_repository(db=Depends(get_database)):
     return DocumentRepository(db=db)
+
+def get_chat_repository(db=Depends(get_database)):
+    return ChatRepository(db=db)
 
 embedding_provider = GeminiEmbeddings(
     api_key=settings.gemini_api_key,
@@ -58,11 +65,29 @@ def get_retrieve_context_use_case(
     )
 
 def get_chat_use_case(
+    chat_repository = Depends(get_chat_repository),
     llm_provider=Depends(get_llm_provider),
     retrieve_context_use_case=Depends(get_retrieve_context_use_case),
 ) -> ChatUseCase:
 
     return ChatUseCase(
+        chat_repository=chat_repository,
         llm_provider=llm_provider,
         retrieve_context_use_case=retrieve_context_use_case
+    )
+
+def get_conversations_use_case(
+    chat_repository = Depends(get_chat_repository),
+) -> ConversationsUseCase:
+
+    return ConversationsUseCase(
+        chat_repository=chat_repository,
+    )
+
+def get_messages_use_case(
+    chat_repository = Depends(get_chat_repository),
+) -> MessagesUseCase:
+
+    return MessagesUseCase(
+        chat_repository=chat_repository,
     )

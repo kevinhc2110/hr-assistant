@@ -3,6 +3,8 @@ from fastapi import Depends
 from fastapi import UploadFile
 from fastapi import File
 
+from src.hr_assistant.api.schemas.document_schema import UploadDocumentResponse
+from src.hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
 from src.hr_assistant.core.dependencies import get_ingest_document_use_case
 
 router = APIRouter(
@@ -13,7 +15,7 @@ router = APIRouter(
 @router.post("/upload")
 async def upload_document(
     file: UploadFile = File(...),
-    use_case=Depends(
+    use_case: IngestDocumentUseCase = Depends(
         get_ingest_document_use_case
     ),
 ):
@@ -22,7 +24,7 @@ async def upload_document(
         file=file
     )
 
-    return {
-        "id": document.id,
-        "filename": document.filename
-    }
+    return UploadDocumentResponse(
+        id=document["id"],
+        filename=document["filename"]
+    )

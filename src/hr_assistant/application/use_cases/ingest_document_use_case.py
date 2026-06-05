@@ -27,7 +27,7 @@ class IngestDocumentUseCase:
             chunk_overlap=50
         )
 
-    async def execute(self, file: UploadFile):
+    async def execute(self, file: UploadFile) -> dict:
 
         document = Document(
             id=str(uuid4()),
@@ -59,7 +59,10 @@ class IngestDocumentUseCase:
                 },
             )
 
-        return document
+        return {
+            "id": document.id,
+            "filename": document.filename
+        }
 
 
     async def _load_nodes(self, file: UploadFile,
