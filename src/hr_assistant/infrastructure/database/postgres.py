@@ -3,7 +3,7 @@ from typing import Optional
 import asyncpg
 from pgvector.asyncpg import register_vector
 
-from src.hr_assistant.infrastructure.database.base import Database
+from hr_assistant.infrastructure.database.base import Database
 
 class PostgresDatabase(Database):
 

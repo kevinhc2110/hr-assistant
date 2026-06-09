@@ -6,8 +6,8 @@ FastAPI RAG chatbot (Google Gemini) with PostgreSQL + pgvector, managed with Poe
 
 ```sh
 poetry install                          # install deps (Python >=3.13)
-uvicorn src.hr_assistant.main:app       # dev server (run from repo root)
-poetry run uvicorn src.hr_assistant.main:app
+uvicorn hr_assistant.main:app       # dev server (run from repo root)
+poetry run uvicorn hr_assistant.main:app
 
 # Docker
 docker compose up -d                    # build & start app + db
@@ -46,7 +46,7 @@ tests/unit/ and tests/integration/     # empty stubs
 
 ## Quirks & gotchas
 
-- **All internal imports use `src.hr_assistant.` prefix** (e.g., `from src.hr_assistant.api.routers...`). Do not use relative imports.
+- **All internal imports use `hr_assistant.` prefix** (e.g., `from hr_assistant.api.routers...`). Do not use relative imports.
 - **PostgreSQL + pgvector required** — the in-memory store was removed. You need a running Postgres with the `vector` extension and the `documents`/`chunks` tables created (see README for DDL).
 - **Pool injected at startup** — `PostgresDatabase` creates an `asyncpg` pool in the FastAPI `lifespan` handler. The pool is then injected into `PGVectorStore.pool` before any request arrives.
 - **Config**: Required env vars: `gemini_api_key`, `gemini_model`, `gemini_embedding_model`, `postgres_dsn`, `postgres_user`, `postgres_password`, `postgres_db`. Loaded from `.env` via pydantic-settings.

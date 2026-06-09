@@ -1,10 +1,10 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from src.hr_assistant.api.routers.chat_router import router as chat_router
-from src.hr_assistant.api.routers.documents_router import router as document_router
-from src.hr_assistant.core.config import settings
-from src.hr_assistant.infrastructure.database.postgres import PostgresDatabase
+from hr_assistant.api.routers.chat_router import router as chat_router
+from hr_assistant.api.routers.documents_router import router as document_router
+from hr_assistant.core.config import settings
+from hr_assistant.infrastructure.database.postgres import PostgresDatabase
 
 
 @asynccontextmanager

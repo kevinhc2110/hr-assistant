@@ -1,7 +1,7 @@
 import anyio
 from google import genai
 
-from src.hr_assistant.infrastructure.embeddings.base import EmbeddingProvider
+from hr_assistant.infrastructure.embeddings.base import EmbeddingProvider
 
 
 class GeminiEmbeddings(

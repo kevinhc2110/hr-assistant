@@ -17,12 +17,13 @@ ENV PATH="/root/.local/bin:$PATH"
 
 RUN poetry config virtualenvs.create false
 
-COPY pyproject.toml poetry.lock* ./
+COPY pyproject.toml poetry.lock* README.md ./
+COPY src ./src
 
-RUN poetry install --no-root --no-interaction --no-ansi
+RUN poetry install --no-interaction --no-ansi
 
 COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "src.hr_assistant.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "hr_assistant.main:app", "--host", "0.0.0.0", "--port", "8000"]

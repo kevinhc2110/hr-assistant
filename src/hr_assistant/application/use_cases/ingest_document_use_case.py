@@ -9,7 +9,7 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.schema import Document as LlamaDocument
 from llama_index.readers.file import DocxReader, PandasCSVReader, PDFReader
 
-from src.hr_assistant.domain.entities.document_entity import Document
+from hr_assistant.domain.entities.document_entity import Document
 
 class IngestDocumentUseCase:
 

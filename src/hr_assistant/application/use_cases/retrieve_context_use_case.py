@@ -1,4 +1,4 @@
-from src.hr_assistant.infrastructure.vectorstore.models import ChunkRecord
+from hr_assistant.infrastructure.vectorstore.models import ChunkRecord
 
 
 class RetrieveContextUseCase:

@@ -1,5 +1,5 @@
-from src.hr_assistant.domain.entities.conversation_entity import Conversation
-from src.hr_assistant.domain.entities.message_entity import Messages
+from hr_assistant.domain.entities.conversation_entity import Conversation
+from hr_assistant.domain.entities.message_entity import Messages
 
 
 

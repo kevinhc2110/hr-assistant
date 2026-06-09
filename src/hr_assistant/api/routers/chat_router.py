@@ -1,11 +1,11 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi import Depends
 
-from src.hr_assistant.api.schemas.chat_schema import ChatRequest, ChatResponse, ConversationResponse, CoversationRequest, MessageRequest, MessageResponse
-from src.hr_assistant.application.use_cases.chat_use_case import ChatUseCase
-from src.hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
-from src.hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
-from src.hr_assistant.core.dependencies import get_chat_use_case, get_conversations_use_case, get_messages_use_case
+from hr_assistant.api.schemas.chat_schema import ChatRequest, ChatResponse, ConversationResponse, CoversationRequest, MessageRequest, MessageResponse
+from hr_assistant.application.use_cases.chat_use_case import ChatUseCase
+from hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
+from hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
+from hr_assistant.core.dependencies import get_chat_use_case, get_conversations_use_case, get_messages_use_case
 
 router = APIRouter(
     prefix="/chat",

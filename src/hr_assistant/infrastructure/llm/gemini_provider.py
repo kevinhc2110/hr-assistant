@@ -1,4 +1,4 @@
-from src.hr_assistant.infrastructure.llm.base import LLMProvider
+from hr_assistant.infrastructure.llm.base import LLMProvider
 from google import genai
 from google.genai import types
 

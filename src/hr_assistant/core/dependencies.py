@@ -2,17 +2,17 @@
 from fastapi import Depends
 from starlette.requests import HTTPConnection
 
-from src.hr_assistant.application.use_cases.chat_use_case import ChatUseCase
-from src.hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
-from src.hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
-from src.hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
-from src.hr_assistant.application.use_cases.retrieve_context_use_case import RetrieveContextUseCase
-from src.hr_assistant.infrastructure.embeddings.gemini_embeddings import GeminiEmbeddings
-from src.hr_assistant.infrastructure.llm.gemini_provider import GeminiProvider
-from src.hr_assistant.core.config import settings
-from src.hr_assistant.infrastructure.repositories.chat_repository import ChatRepository
-from src.hr_assistant.infrastructure.repositories.document_repository import DocumentRepository
-from src.hr_assistant.infrastructure.vectorstore.pgvector_store import PGVectorStore
+from hr_assistant.application.use_cases.chat_use_case import ChatUseCase
+from hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
+from hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
+from hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
+from hr_assistant.application.use_cases.retrieve_context_use_case import RetrieveContextUseCase
+from hr_assistant.infrastructure.embeddings.gemini_embeddings import GeminiEmbeddings
+from hr_assistant.infrastructure.llm.gemini_provider import GeminiProvider
+from hr_assistant.core.config import settings
+from hr_assistant.infrastructure.repositories.chat_repository import ChatRepository
+from hr_assistant.infrastructure.repositories.document_repository import DocumentRepository
+from hr_assistant.infrastructure.vectorstore.pgvector_store import PGVectorStore
 
 
 llm_provider = GeminiProvider(

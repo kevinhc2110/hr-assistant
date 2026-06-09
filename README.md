@@ -87,10 +87,47 @@ postgres_dsn=postgresql://kevinhc2110:password@localhost:5432/hr_assistant
 
 ```sh
 poetry install
-poetry run uvicorn src.hr_assistant.main:app --reload
+poetry run uvicorn hr_assistant.main:app --reload
 ```
 
 The API is available at `http://localhost:8000`. Open `http://localhost:8000/docs` for the interactive Swagger UI.
+
+## Testing
+
+Tests use **pytest** with **pytest-asyncio** (async mode auto-enabled). All unit tests mock external dependencies; integration tests mock use cases via FastAPI dependency overrides.
+
+### Run all tests
+
+```sh
+poetry run pytest
+```
+
+### Run unit tests only
+
+```sh
+poetry run pytest tests/unit/
+```
+
+| Test file                               | What it covers                                                        |
+| --------------------------------------- | --------------------------------------------------------------------- |
+| `test_domain_entities.py`               | `Conversation`, `Document`, `Messages` dataclass construction         |
+| `test_schemas.py`                       | Pydantic request/response schema validation                           |
+| `test_chat_use_case.py`                 | Chat orchestration: new/reused convs, context retrieval, LLM prompt   |
+| `test_conversations_use_case.py`        | Conversation listing                                                  |
+| `test_messages_use_case.py`             | Message history retrieval                                             |
+| `test_ingest_document_use_case.py`      | Document ingestion flow (parsing, chunking, embedding, storing)       |
+| `test_retrieve_context_use_case.py`     | Vector search context retrieval                                       |
+
+### Run integration tests only
+
+```sh
+poetry run pytest tests/integration/
+```
+
+| Test file                   | What it covers                                                    |
+| --------------------------- | ----------------------------------------------------------------- |
+| `test_chat_router.py`       | `GET /chat/conversations`, `GET /chat/messages`, WebSocket chat   |
+| `test_documents_router.py`  | `POST /documents/upload` with `.txt` / `.pdf` and edge cases      |
 
 ## API Endpoints
 
