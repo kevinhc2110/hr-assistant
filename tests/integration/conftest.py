@@ -12,6 +12,7 @@ from hr_assistant.application.use_cases.chat_use_case import ChatUseCase
 from hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
 from hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
 from hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
+from hr_assistant.domain.entities.conversation_entity import Conversation
 from hr_assistant.infrastructure.vectorstore.models import ChunkRecord
 from hr_assistant.core.dependencies import (
     get_chat_use_case,
@@ -43,6 +44,13 @@ def mock_chat_use_case():
         }
 
     use_case.execute = AsyncMock(side_effect=execute_side_effect)
+
+    async def stream_side_effect(question, conversation_id):
+        yield "Respuesta"
+        yield " simulada"
+        yield " del asistente."
+
+    use_case.execute_stream = stream_side_effect
     return use_case
 
 
@@ -53,6 +61,13 @@ def mock_conversations_use_case():
         return_value=[
             {"id": str(uuid4()), "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc)},
         ]
+    )
+    use_case.execute_create = AsyncMock(
+        return_value=Conversation(
+            id=FIXED_CONVERSATION_ID,
+            user_id="00000000-0000-0000-0000-000000000000",
+            created_at=datetime.now(timezone.utc),
+        )
     )
     return use_case
 

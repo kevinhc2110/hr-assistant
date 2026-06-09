@@ -49,3 +49,28 @@ class TestMessagesUseCase:
         result = await use_case.execute(conversation_id=str(uuid4()))
 
         assert result == []
+
+    async def test_execute_create_returns_message(self, use_case, mock_chat_repository):
+        conv_id = str(uuid4())
+        expected = Messages(
+            id=str(uuid4()),
+            conversation_id=conv_id,
+            role="user",
+            content="Test message",
+            created_at=datetime.now(timezone.utc),
+        )
+        mock_chat_repository.save_message.return_value = expected
+
+        result = await use_case.execute_create(
+            conversation_id=conv_id,
+            role="user",
+            content="Test message",
+        )
+
+        assert result.id == expected.id
+        assert result.role == "user"
+        assert result.content == "Test message"
+        mock_chat_repository.save_message.assert_awaited_once()
+        saved = mock_chat_repository.save_message.await_args.args[0]
+        assert saved.role == "user"
+        assert saved.content == "Test message"

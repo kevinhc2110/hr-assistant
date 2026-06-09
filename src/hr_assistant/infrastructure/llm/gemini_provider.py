@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+
 from hr_assistant.infrastructure.llm.base import LLMProvider
 from google import genai
 from google.genai import types
@@ -40,3 +42,24 @@ class GeminiProvider(LLMProvider):
             )
         )
         return response.text
+    
+    async def stream_generate(
+        self,
+        prompt: str,
+        system_instruction: str = HR_SYSTEM_PROMPT,
+        temperature: float = 0.5,
+    ) -> AsyncGenerator[str, None]:
+
+        for chunk in self.client.models.generate_content_stream(
+            model=self.model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=temperature,
+                system_instruction=system_instruction
+            )
+        ):
+        
+            if chunk.text:
+                yield chunk.text
+
+        

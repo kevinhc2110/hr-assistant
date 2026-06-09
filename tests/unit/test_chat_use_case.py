@@ -5,53 +5,34 @@ import pytest
 
 from hr_assistant.application.use_cases.chat_use_case import ChatUseCase
 from hr_assistant.domain.entities.message_entity import Messages
-from hr_assistant.infrastructure.vectorstore.models import ChunkRecord
 
 
 class TestChatUseCase:
     @pytest.fixture
-    def use_case(self, mock_chat_repository, mock_llm_provider, mock_retrieve_context_use_case):
+    def use_case(self, mock_llm_provider, mock_conversations_use_case, mock_messages_use_case, mock_retrieve_context_use_case):
         return ChatUseCase(
-            chat_repository=mock_chat_repository,
             llm_provider=mock_llm_provider,
+            conversations_use_case=mock_conversations_use_case,
+            messages_use_case=mock_messages_use_case,
             retrieve_context_use_case=mock_retrieve_context_use_case,
         )
 
-    @pytest.fixture
-    def history_messages(self):
-        return [
-            Messages(
-                id=str(uuid4()),
-                conversation_id=str(uuid4()),
-                role="user",
-                content="Pregunta anterior",
-                created_at="2024-01-01T00:00:00+00:00",
-            ),
-            Messages(
-                id=str(uuid4()),
-                conversation_id=str(uuid4()),
-                role="assistant",
-                content="Respuesta anterior",
-                created_at="2024-01-01T00:00:05+00:00",
-            ),
-        ]
-
-    async def test_execute_creates_new_conversation(self, use_case, mock_chat_repository, mock_llm_provider, mock_retrieve_context_use_case, history_messages):
-        mock_chat_repository.get_messages.return_value = history_messages
-
+    async def test_execute_creates_new_conversation(self, use_case, mock_llm_provider, mock_conversations_use_case, mock_messages_use_case, mock_retrieve_context_use_case):
         result = await use_case.execute(question="¿Cuál es la política de vacaciones?")
 
         assert "conversation_id" in result
         assert result["answer"] == "Esta es una respuesta de prueba."
 
-        mock_chat_repository.save_conversation.assert_awaited_once()
-        assert mock_chat_repository.save_message.await_count == 2
+        mock_conversations_use_case.execute_create.assert_awaited_once_with(
+            user_id="00000000-0000-0000-0000-000000000000",
+        )
+        assert mock_messages_use_case.execute.await_count == 1
+        assert mock_messages_use_case.execute_create.await_count == 2
         mock_llm_provider.generate.assert_awaited_once()
         mock_retrieve_context_use_case.execute.assert_awaited_once()
 
-    async def test_execute_reuses_existing_conversation(self, use_case, mock_chat_repository, mock_llm_provider, mock_retrieve_context_use_case, history_messages):
+    async def test_execute_reuses_existing_conversation(self, use_case, mock_conversations_use_case, mock_messages_use_case):
         conv_id = str(uuid4())
-        mock_chat_repository.get_messages.return_value = history_messages
 
         result = await use_case.execute(
             question="¿Cómo solicito vacaciones?",
@@ -59,12 +40,11 @@ class TestChatUseCase:
         )
 
         assert result["conversation_id"] == conv_id
-        mock_chat_repository.save_conversation.assert_not_awaited()
-        assert mock_chat_repository.save_message.await_count == 2
+        mock_conversations_use_case.execute_create.assert_not_awaited()
+        assert mock_messages_use_case.execute.await_count == 1
+        assert mock_messages_use_case.execute_create.await_count == 2
 
-    async def test_execute_retrieves_context_and_generates_answer(self, use_case, mock_chat_repository, mock_llm_provider, mock_retrieve_context_use_case, history_messages):
-        mock_chat_repository.get_messages.return_value = history_messages
-
+    async def test_execute_retrieves_context_and_generates_answer(self, use_case, mock_llm_provider, mock_retrieve_context_use_case):
         result = await use_case.execute(question="¿Qué dice la política de home office?")
 
         mock_retrieve_context_use_case.execute.assert_awaited_once_with(
@@ -77,10 +57,27 @@ class TestChatUseCase:
         assert "Chunk de prueba" in prompt_arg
         assert result["answer"] == "Esta es una respuesta de prueba."
 
-    async def test_execute_handles_no_history(self, use_case, mock_chat_repository, mock_llm_provider, mock_retrieve_context_use_case):
-        mock_chat_repository.get_messages.return_value = []
+    async def test_execute_handles_no_history(self, use_case, mock_llm_provider, mock_messages_use_case):
+        mock_messages_use_case.execute.return_value = []
 
         result = await use_case.execute(question="Hola")
 
         assert result["answer"] == "Esta es una respuesta de prueba."
-        mock_chat_repository.save_message.assert_awaited()
+        mock_messages_use_case.execute_create.assert_awaited()
+
+    async def test_execute_stream_yields_chunks(self, use_case, mock_llm_provider):
+        async def stream_generator(prompt, system_instruction=None, temperature=0.5):
+            yield "Chunk "
+            yield "de "
+            yield "prueba."
+
+        mock_llm_provider.stream_generate = stream_generator
+
+        chunks = []
+        async for chunk in use_case.execute_stream(
+            question="¿Cómo solicito vacaciones?",
+            conversation_id=str(uuid4()),
+        ):
+            chunks.append(chunk)
+
+        assert chunks == ["Chunk ", "de ", "prueba."]

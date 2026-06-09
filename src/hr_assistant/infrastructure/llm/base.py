@@ -10,3 +10,12 @@ class LLMProvider(ABC):
         temperature: float = 0.3
     ) -> str:
         pass
+
+    @abstractmethod
+    async def stream_generate(
+        self,
+        prompt: str,
+        system_instruction: str | None = None,
+        temperature: float = 0.3
+    ) -> str:
+        pass

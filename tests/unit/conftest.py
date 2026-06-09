@@ -65,6 +65,57 @@ def mock_retrieve_context_use_case():
 
 
 @pytest.fixture
+def mock_conversations_use_case():
+    use_case = MagicMock()
+    use_case.execute = AsyncMock(
+        return_value=[
+            {"id": str(uuid4()), "created_at": datetime.now(timezone.utc)},
+        ]
+    )
+    use_case.execute_create = AsyncMock(
+        return_value=Conversation(
+            id=str(uuid4()),
+            user_id="00000000-0000-0000-0000-000000000000",
+            created_at=datetime.now(timezone.utc),
+        )
+    )
+    return use_case
+
+
+@pytest.fixture
+def mock_messages_use_case():
+    use_case = MagicMock()
+    use_case.execute = AsyncMock(
+        return_value=[
+            Messages(
+                id=str(uuid4()),
+                conversation_id=str(uuid4()),
+                role="user",
+                content="Pregunta anterior",
+                created_at=datetime.now(timezone.utc),
+            ),
+            Messages(
+                id=str(uuid4()),
+                conversation_id=str(uuid4()),
+                role="assistant",
+                content="Respuesta anterior",
+                created_at=datetime.now(timezone.utc),
+            ),
+        ]
+    )
+    use_case.execute_create = AsyncMock(
+        return_value=Messages(
+            id=str(uuid4()),
+            conversation_id=str(uuid4()),
+            role="user",
+            content="Nuevo mensaje",
+            created_at=datetime.now(timezone.utc),
+        )
+    )
+    return use_case
+
+
+@pytest.fixture
 def mock_document_repository():
     repo = MagicMock()
     repo.save_document = AsyncMock()

@@ -133,14 +133,41 @@ poetry run pytest tests/integration/
 
 | Method | Path                  | Description                                                     |
 | ------ | --------------------- | --------------------------------------------------------------- |
-| `WS`   | `/chat/ws`            | WebSocket chat — send messages, receive answers                 |
+| `WS`   | `/chat/ws`            | WebSocket chat — streaming responses                            |
+| `POST` | `/chat/chat`          | REST chat — send message, receive answer                        |
 | `GET`  | `/chat/conversations` | List conversations by `user_id`                                 |
 | `GET`  | `/chat/messages`      | List messages for a `conversation_id`                           |
 | `POST` | `/documents/upload`   | Upload a file (`.txt`, `.pdf`, `.docx`, `.csv`, `.xlsx`/`.xls`) |
 
+### Chat via REST
+
+```sh
+curl -X POST http://localhost:8000/chat/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "¿Cuántos días de vacaciones tengo?"}'
+```
+
+To continue an existing conversation:
+
+```sh
+curl -X POST http://localhost:8000/chat/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "¿Puedo acumularlos?", "conversation_id": "<uuid>"}'
+```
+
+**Response:**
+
+```json
+{ "answer": "...", "conversation_id": "<uuid>" }
+```
+
 ### Chat via WebSocket
 
-Connect to `ws://localhost:8000/chat/ws` and exchange JSON messages:
+Connect to `ws://localhost:8000/chat/ws`. On connection a conversation is auto-created and you receive:
+
+```json
+{ "type": "conversation_created", "conversation_id": "<uuid>" }
+```
 
 **Send:**
 
@@ -148,16 +175,12 @@ Connect to `ws://localhost:8000/chat/ws` and exchange JSON messages:
 { "message": "¿Cuántos días de vacaciones tengo?" }
 ```
 
-Or continue an existing conversation:
+**Receive** (streaming chunks followed by a done signal):
 
 ```json
-{ "message": "¿Puedo acumularlos?", "conversation_id": "<uuid>" }
-```
-
-**Receive:**
-
-```json
-{ "answer": "...", "conversation_id": "<uuid>" }
+{ "type": "chunk", "content": "Según la política..." }
+{ "type": "chunk", "content": " de vacaciones, tienes..." }
+{ "type": "done" }
 ```
 
 ### Conversation & Message History
@@ -267,13 +290,13 @@ hr-assistant/
 │   │   │   ├── chat_router.py             # WS /chat/ws, GET /chat/conversations, GET /chat/messages
 │   │   │   └── documents_router.py        # POST /documents/upload
 │   │   └── schemas/
-│   │       ├── chat_schema.py             # Chat/Conversation/Message Pydantic models
+│   │       ├── chat_schema.py             # ChatRequest/Response, ConversationRequest/Response, MessageRequest/Response
 │   │       └── document_schema.py         # Upload response model
 │   ├── application/use_cases/
-│   │   ├── chat_use_case.py               # Chat orchestration with history
-│   │   ├── conversations_use_case.py      # List conversations
+│   │   ├── chat_use_case.py               # Chat orchestration with history + streaming
+│   │   ├── conversations_use_case.py      # List & create conversations
 │   │   ├── ingest_document_use_case.py    # Multi-format ingestion + chunking
-│   │   ├── messages_use_case.py           # List messages
+│   │   ├── messages_use_case.py           # List & create messages
 │   │   └── retrieve_context_use_case.py   # Vector search context retrieval
 │   ├── domain/entities/
 │   │   ├── conversation_entity.py         # Conversation dataclass

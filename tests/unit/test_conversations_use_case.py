@@ -35,3 +35,15 @@ class TestConversationsUseCase:
         result = await use_case.execute(user_id="user-unknown")
 
         assert result == []
+
+    async def test_execute_create_returns_conversation(self, use_case, mock_chat_repository):
+        expected = Conversation(id=str(uuid4()), user_id="user-1", created_at=datetime.now(timezone.utc))
+        mock_chat_repository.save_conversation.return_value = expected
+
+        result = await use_case.execute_create(user_id="user-1")
+
+        assert result.id == expected.id
+        assert result.user_id == "user-1"
+        mock_chat_repository.save_conversation.assert_awaited_once()
+        saved = mock_chat_repository.save_conversation.await_args.args[0]
+        assert saved.user_id == "user-1"

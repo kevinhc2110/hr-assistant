@@ -64,17 +64,6 @@ def get_retrieve_context_use_case(
         vector_store=vector_store
     )
 
-def get_chat_use_case(
-    chat_repository = Depends(get_chat_repository),
-    llm_provider=Depends(get_llm_provider),
-    retrieve_context_use_case=Depends(get_retrieve_context_use_case),
-) -> ChatUseCase:
-
-    return ChatUseCase(
-        chat_repository=chat_repository,
-        llm_provider=llm_provider,
-        retrieve_context_use_case=retrieve_context_use_case
-    )
 
 def get_conversations_use_case(
     chat_repository = Depends(get_chat_repository),
@@ -90,4 +79,19 @@ def get_messages_use_case(
 
     return MessagesUseCase(
         chat_repository=chat_repository,
+    )
+
+def get_chat_use_case(
+    llm_provider=Depends(get_llm_provider),
+    conversations_use_case=Depends(get_conversations_use_case),
+    messages_use_case=Depends(get_messages_use_case),
+    retrieve_context_use_case=Depends(get_retrieve_context_use_case),
+
+) -> ChatUseCase:
+
+    return ChatUseCase(
+        llm_provider=llm_provider,
+        conversations_use_case=conversations_use_case,
+        messages_use_case=messages_use_case,
+        retrieve_context_use_case=retrieve_context_use_case
     )

@@ -7,7 +7,7 @@ class ChatRepository:
     def __init__(self, db):
         self.db =  db
 
-    async def save_conversation(self, conversation: Conversation):
+    async def save_conversation(self, conversation: Conversation) -> Conversation:
         await self.db.execute(
             """
             INSERT INTO conversations (
@@ -22,7 +22,9 @@ class ChatRepository:
             conversation.created_at
         )
 
-    async def save_message(self, chat: Messages):
+        return conversation
+    
+    async def save_message(self, chat: Messages) -> Messages:
         await self.db.execute(
             """
             INSERT INTO messages (
@@ -40,9 +42,10 @@ class ChatRepository:
             chat.content,
             chat.created_at
         )
-        pass
+        
+        return chat
     
-    async def get_conversations(self, user_id: str, limit: int = 20):
+    async def get_conversations(self, user_id: str, limit: int = 20) -> list[Conversation]:
         rows = await self.db.fetch(
             """
             SELECT
@@ -64,7 +67,7 @@ class ChatRepository:
             created_at=r["created_at"]
         ) for r in rows ]
 
-    async def get_messages(self, conversation_id: str, limit: int = 20):
+    async def get_messages(self, conversation_id: str, limit: int = 20) -> list[Messages]:
         rows = await self.db.fetch(
             """
             SELECT

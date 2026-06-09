@@ -1,3 +1,9 @@
+from datetime import datetime, timezone
+from uuid import uuid4
+
+from hr_assistant.domain.entities.message_entity import Messages
+
+
 class MessagesUseCase:
 
     def __init__(
@@ -23,3 +29,21 @@ class MessagesUseCase:
             }
             for message in messages
         ]
+    
+    async def execute_create(
+        self,
+        conversation_id: str,
+        role: str,
+        content: str,
+    ) -> Messages:
+        message = await self.chat_repository.save_message(
+            Messages(
+                id=str(uuid4()),
+                conversation_id=conversation_id,
+                role=role,
+                content=content,
+                created_at=datetime.now(timezone.utc)
+            )
+        )
+
+        return message
