@@ -5,7 +5,7 @@ import pytest
 
 class TestChatConversationsEndpoint:
     def test_get_conversations_returns_list(self, client):
-        response = client.request("GET", "/chat/conversations", json={"user_id": "user-123"})
+        response = client.get("/chat/conversations?user_id=user-123")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
@@ -20,10 +20,8 @@ class TestChatConversationsEndpoint:
 
 class TestChatMessagesEndpoint:
     def test_get_messages_returns_list(self, client):
-        response = client.request(
-            "GET",
-            "/chat/messages",
-            json={"conversation_id": "00000000-0000-0000-0000-000000000000"},
+        response = client.get(
+            "/chat/messages?conversation_id=00000000-0000-0000-0000-000000000000",
         )
         assert response.status_code == 200
         data = response.json()

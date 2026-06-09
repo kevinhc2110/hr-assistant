@@ -1,7 +1,7 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from fastapi import Depends
 
-from hr_assistant.api.schemas.chat_schema import ChatRequest, ChatResponse, ConversationResponse, ConversationRequest, MessageRequest, MessageResponse
+from hr_assistant.api.schemas.chat_schema import ChatRequest, ChatResponse, ConversationResponse, MessageResponse
 from hr_assistant.application.use_cases.chat_use_case import ChatUseCase
 from hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
 from hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
@@ -17,21 +17,19 @@ router = APIRouter(
     response_model=list[ConversationResponse],
 )
 async def conversations(
-    request: ConversationRequest,
+    user_id: str = Query(...),
     use_case: ConversationsUseCase = Depends(
         get_conversations_use_case
     ),
 ):
-    conversations = await use_case.execute(
-        user_id=request.user_id,
-    )
+    convs = await use_case.execute(user_id=user_id)
 
     return [
         ConversationResponse(
-            id=conversation["id"],
-            created_at=conversation["created_at"].isoformat(),
+            id=c["id"],
+            created_at=c["created_at"].isoformat(),
         )
-        for conversation in conversations
+        for c in convs
     ]
 
 
@@ -40,23 +38,21 @@ async def conversations(
     response_model=list[MessageResponse],
 )
 async def messages(
-    request: MessageRequest,
+    conversation_id: str = Query(...),
     use_case: MessagesUseCase = Depends(
         get_messages_use_case
     ),
 ):
-    messages = await use_case.execute(
-        conversation_id=request.conversation_id,
-    )
+    msgs = await use_case.execute(conversation_id=conversation_id)
 
     return [
         MessageResponse(
-            id=message["id"],
-            role=message["role"],
-            content=message["content"],
-            created_at=message["created_at"].isoformat(),
+            id=m["id"],
+            role=m["role"],
+            content=m["content"],
+            created_at=m["created_at"].isoformat(),
         )
-        for message in messages
+        for m in msgs
     ]
 
 @router.post("/chat")
@@ -82,11 +78,17 @@ async def chat_websocket(
 ):
     await websocket.accept()
 
-    conversation = await use_case_conversations.execute_create(
-        user_id="00000000-0000-0000-0000-000000000000",   
+    existing = await use_case_conversations.execute(
+        user_id="00000000-0000-0000-0000-000000000000",
     )
 
-    conversation_id = conversation.id
+    if existing:
+        conversation_id = existing[0]["id"]
+    else:
+        conversation = await use_case_conversations.execute_create(
+            user_id="00000000-0000-0000-0000-000000000000",
+        )
+        conversation_id = conversation.id
 
     await websocket.send_json({
         "type": "conversation_created",

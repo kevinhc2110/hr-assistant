@@ -7,8 +7,6 @@ from hr_assistant.api.schemas.chat_schema import (
     ChatRequest,
     ChatResponse,
     ConversationResponse,
-    ConversationRequest,
-    MessageRequest,
     MessageResponse,
 )
 from hr_assistant.api.schemas.document_schema import UploadDocumentResponse
@@ -39,16 +37,6 @@ class TestChatResponse:
         assert resp.answer == "Respuesta"
 
 
-class TestConversationRequest:
-    def test_valid_request(self):
-        req = ConversationRequest(user_id="user-123")
-        assert req.user_id == "user-123"
-
-    def test_user_id_is_required(self):
-        with pytest.raises(ValidationError):
-            ConversationRequest()
-
-
 class TestConversationResponse:
     def test_valid_response(self):
         resp = ConversationResponse(
@@ -56,13 +44,6 @@ class TestConversationResponse:
             created_at="2024-01-01T00:00:00+00:00",
         )
         assert resp.created_at == "2024-01-01T00:00:00+00:00"
-
-
-class TestMessageRequest:
-    def test_valid_request(self):
-        conv_id = str(uuid4())
-        req = MessageRequest(conversation_id=conv_id)
-        assert req.conversation_id == conv_id
 
 
 class TestMessageResponse:

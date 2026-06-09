@@ -62,8 +62,8 @@ class ChatRepository:
         )
 
         return [Conversation(
-            id=r["id"],
-            user_id=r["user_id"],
+            id=str(r["id"]),
+            user_id=str(r["user_id"]),
             created_at=r["created_at"]
         ) for r in rows ]
 
@@ -85,8 +85,8 @@ class ChatRepository:
             limit
         )
         return [Messages(
-            id=r["id"],
-            conversation_id=r["conversation_id"],
+            id=str(r["id"]),
+            conversation_id=str(r["conversation_id"]),
             role=r["role"],
             content=r["content"],
             created_at=r["created_at"]

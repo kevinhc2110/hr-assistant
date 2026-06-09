@@ -13,16 +13,17 @@ RAG-powered HR chatbot built with FastAPI and Google Gemini. Upload company docu
 
 ## Tech Stack
 
-| Layer            | Technology                                                                                                                                |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Framework        | [FastAPI](https://fastapi.tiangolo.com/)                                                                                                  |
-| LLM              | Google Gemini (via `google-genai`)                                                                                                        |
-| Embeddings       | Gemini Embedding API                                                                                                                      |
-| Vector Store     | [PostgreSQL 17](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) (cosine distance via `asyncpg`)           |
-| Document Parsing | [LlamaIndex](https://www.llamaindex.ai/) (`llama-index-core` + `llama-index-readers-file`), `PyMuPDF`, `python-docx`, `pandas`/`openpyxl` |
-| Config           | `pydantic-settings` + `.env`                                                                                                              |
-| Package Manager  | [Poetry](https://python-poetry.org/) (Python >=3.13)                                                                                      |
-| Containerization | [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/) (uses `pgvector/pgvector:pg17`)                    |
+| Layer            | Technology                                                                                                                                               |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend (API)    | [FastAPI](https://fastapi.tiangolo.com/)                                                                                                                 |
+| Frontend (Demo)  | [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite](https://vite.dev/) + [Tailwind CSS v4](https://tailwindcss.com/) |
+| LLM              | Google Gemini (via `google-genai`)                                                                                                                       |
+| Embeddings       | Gemini Embedding API                                                                                                                                     |
+| Vector Store     | [PostgreSQL 17](https://www.postgresql.org/) + [pgvector](https://github.com/pgvector/pgvector) (cosine distance via `asyncpg`)                          |
+| Document Parsing | [LlamaIndex](https://www.llamaindex.ai/) (`llama-index-core` + `llama-index-readers-file`), `PyMuPDF`, `python-docx`, `pandas`/`openpyxl`                |
+| Config           | `pydantic-settings` + `.env`                                                                                                                             |
+| Package Manager  | [Poetry](https://python-poetry.org/) (Python >=3.13) / npm                                                                                               |
+| Containerization | [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/) (uses `pgvector/pgvector:pg17`)                                   |
 
 ## Prerequisites
 
@@ -92,6 +93,57 @@ poetry run uvicorn hr_assistant.main:app --reload
 
 The API is available at `http://localhost:8000`. Open `http://localhost:8000/docs` for the interactive Swagger UI.
 
+## Demo Frontend
+
+A modern chat UI built with **React 19**, **TypeScript**, and **Tailwind CSS v4**, served via Vite with integrated WebSocket streaming.
+
+### Features Frontend
+
+- **Real-time streaming** — Messages appear token by token as the backend generates them.
+- **Markdown rendering** — Assistant responses (lists, bold, tables, etc.) are rendered with `react-markdown` + `remark-gfm`.
+- **Conversation persistence** — On load, the UI fetches existing conversations and messages via REST, then (re)connects the WebSocket for new messages.
+- **Single conversation per user** — Simplified UX: no "new chat" button; the existing conversation is reused.
+- **Document upload** — Upload `.txt`, `.pdf`, `.docx`, `.csv`, `.xlsx` files directly from the sidebar.
+- **Responsive layout** — Collapsible sidebar, auto-scroll to latest message, loading indicators.
+
+### Prerequisites Frontend
+
+- Node.js 18+ with npm
+
+### Run locally
+
+With the backend running (see [Getting Started](#getting-started)), start the dev server:
+
+```sh
+cd demo
+npm install
+npm run dev
+```
+
+The UI is available at `http://localhost:5173`. The Vite proxy forwards `/chat/*` and `/documents/*` requests to `http://localhost:8000`, and WebSocket connections are proxied automatically.
+
+### Project structure
+
+```text
+demo/
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts              # Vite config with dev proxy (ws: true)
+├── src/
+│   ├── main.tsx                # React entry point
+│   ├── App.tsx                 # Layout: Sidebar + ChatArea + UploadModal
+│   ├── hooks/
+│   │   └── useChat.ts          # WebSocket + REST chat hook with streaming
+│   ├── components/
+│   │   ├── Sidebar.tsx         # Conversation info + upload button
+│   │   ├── ChatInput.tsx       # Message input with send button
+│   │   ├── MessageBubble.tsx   # Renders a single message (user or assistant)
+│   │   └── UploadModal.tsx     # File upload modal with drag-and-drop
+│   └── styles/
+│       └── index.css           # Tailwind CSS v4 import
+```
+
 ## Testing
 
 Tests use **pytest** with **pytest-asyncio** (async mode auto-enabled). All unit tests mock external dependencies; integration tests mock use cases via FastAPI dependency overrides.
@@ -108,15 +160,15 @@ poetry run pytest
 poetry run pytest tests/unit/
 ```
 
-| Test file                               | What it covers                                                        |
-| --------------------------------------- | --------------------------------------------------------------------- |
-| `test_domain_entities.py`               | `Conversation`, `Document`, `Messages` dataclass construction         |
-| `test_schemas.py`                       | Pydantic request/response schema validation                           |
-| `test_chat_use_case.py`                 | Chat orchestration: new/reused convs, context retrieval, LLM prompt   |
-| `test_conversations_use_case.py`        | Conversation listing                                                  |
-| `test_messages_use_case.py`             | Message history retrieval                                             |
-| `test_ingest_document_use_case.py`      | Document ingestion flow (parsing, chunking, embedding, storing)       |
-| `test_retrieve_context_use_case.py`     | Vector search context retrieval                                       |
+| Test file                           | What it covers                                                      |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `test_domain_entities.py`           | `Conversation`, `Document`, `Messages` dataclass construction       |
+| `test_schemas.py`                   | Pydantic request/response schema validation                         |
+| `test_chat_use_case.py`             | Chat orchestration: new/reused convs, context retrieval, LLM prompt |
+| `test_conversations_use_case.py`    | Conversation listing                                                |
+| `test_messages_use_case.py`         | Message history retrieval                                           |
+| `test_ingest_document_use_case.py`  | Document ingestion flow (parsing, chunking, embedding, storing)     |
+| `test_retrieve_context_use_case.py` | Vector search context retrieval                                     |
 
 ### Run integration tests only
 
@@ -124,10 +176,10 @@ poetry run pytest tests/unit/
 poetry run pytest tests/integration/
 ```
 
-| Test file                   | What it covers                                                    |
-| --------------------------- | ----------------------------------------------------------------- |
-| `test_chat_router.py`       | `GET /chat/conversations`, `GET /chat/messages`, WebSocket chat   |
-| `test_documents_router.py`  | `POST /documents/upload` with `.txt` / `.pdf` and edge cases      |
+| Test file                  | What it covers                                                  |
+| -------------------------- | --------------------------------------------------------------- |
+| `test_chat_router.py`      | `GET /chat/conversations`, `GET /chat/messages`, WebSocket chat |
+| `test_documents_router.py` | `POST /documents/upload` with `.txt` / `.pdf` and edge cases    |
 
 ## API Endpoints
 
@@ -290,7 +342,7 @@ hr-assistant/
 │   │   │   ├── chat_router.py             # WS /chat/ws, GET /chat/conversations, GET /chat/messages
 │   │   │   └── documents_router.py        # POST /documents/upload
 │   │   └── schemas/
-│   │       ├── chat_schema.py             # ChatRequest/Response, ConversationRequest/Response, MessageRequest/Response
+│   │       ├── chat_schema.py             # ChatRequest/Response, ConversationResponse, MessageResponse
 │   │       └── document_schema.py         # Upload response model
 │   ├── application/use_cases/
 │   │   ├── chat_use_case.py               # Chat orchestration with history + streaming

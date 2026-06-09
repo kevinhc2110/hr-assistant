@@ -43,7 +43,7 @@ class ChatUseCase:
             )
 
         history_text = "\n\n".join(
-            f"[{m.role}] {m.content}"
+            f"[{m['role']}] {m['content']}"
             for m in reversed(history_messages) 
         )
 
@@ -99,7 +99,7 @@ class ChatUseCase:
             )
         
         history_text = "\n\n".join(
-            f"[{m.role}] {m.content}"
+            f"[{m['role']}] {m['content']}"
             for m in reversed(history_messages) 
         )
 

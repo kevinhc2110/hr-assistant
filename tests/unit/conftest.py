@@ -87,20 +87,20 @@ def mock_messages_use_case():
     use_case = MagicMock()
     use_case.execute = AsyncMock(
         return_value=[
-            Messages(
-                id=str(uuid4()),
-                conversation_id=str(uuid4()),
-                role="user",
-                content="Pregunta anterior",
-                created_at=datetime.now(timezone.utc),
-            ),
-            Messages(
-                id=str(uuid4()),
-                conversation_id=str(uuid4()),
-                role="assistant",
-                content="Respuesta anterior",
-                created_at=datetime.now(timezone.utc),
-            ),
+            {
+                "id": str(uuid4()),
+                "conversation_id": str(uuid4()),
+                "role": "user",
+                "content": "Pregunta anterior",
+                "created_at": datetime.now(timezone.utc),
+            },
+            {
+                "id": str(uuid4()),
+                "conversation_id": str(uuid4()),
+                "role": "assistant",
+                "content": "Respuesta anterior",
+                "created_at": datetime.now(timezone.utc),
+            },
         ]
     )
     use_case.execute_create = AsyncMock(
