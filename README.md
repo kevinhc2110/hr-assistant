@@ -55,7 +55,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-This starts both PostgreSQL 17 (with pgvector) and the app. The API is available at `http://localhost:8000`.
+This starts PostgreSQL 17 (with pgvector) and the app. The API is available at `http://localhost:8000` and the chat UI loads automatically at the same URL.
 
 Stop with:
 
@@ -110,9 +110,9 @@ A modern chat UI built with **React 19**, **TypeScript**, and **Tailwind CSS v4*
 
 - Node.js 18+ with npm
 
-### Run locally
+### Run locally (development)
 
-With the backend running (see [Getting Started](#getting-started)), start the dev server:
+With the backend running outside Docker, start the Vite dev server for hot-reload:
 
 ```sh
 cd demo
@@ -121,6 +121,8 @@ npm run dev
 ```
 
 The UI is available at `http://localhost:5173`. The Vite proxy forwards `/chat/*` and `/documents/*` requests to `http://localhost:8000`, and WebSocket connections are proxied automatically.
+
+> **With Docker** the frontend is pre-built and served directly from the same container — no separate dev server needed.
 
 ### Project structure
 
@@ -322,7 +324,7 @@ A seed anonymous user (`00000000-0000-0000-0000-000000000000`) is inserted on se
 
 ```text
 hr-assistant/
-├── Dockerfile
+├── Dockerfile                            # Multi-stage: builds frontend (node) + backend (python)
 ├── docker-compose.yml
 ├── .dockerignore
 ├── .gitignore
@@ -332,11 +334,15 @@ hr-assistant/
 ├── poetry.lock
 ├── db/
 │   └── init.sql                           # DB schema (5 tables + pgvector index)
+├── demo/                                 # React frontend (built into dist/ during Docker build)
+│   ├── src/
+│   ├── package.json
+│   └── vite.config.ts
 ├── examples/
 │   └── sample_company_policy.txt
 ├── src/hr_assistant/
 │   ├── __init__.py
-│   ├── main.py                            # FastAPI entrypoint + lifespan (DB connect)
+│   ├── main.py                            # FastAPI entrypoint + lifespan (DB connect) + serves frontend static files
 │   ├── api/
 │   │   ├── routers/
 │   │   │   ├── chat_router.py             # WS /chat/ws, GET /chat/conversations, GET /chat/messages
