@@ -7,6 +7,7 @@ interface Props {
 
 export function UploadModal({ open, onClose }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
 
@@ -34,6 +35,7 @@ export function UploadModal({ open, onClose }: Props) {
       setResult({ ok: false, msg: 'Error de conexión con el servidor.' })
     } finally {
       setUploading(false)
+      setSelectedFile(null)
       if (inputRef.current) inputRef.current.value = ''
     }
   }
@@ -55,8 +57,18 @@ export function UploadModal({ open, onClose }: Props) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-gray-400 mb-2">
               <path fillRule="evenodd" d="M10.5 3.75a6 6 0 0 0-5.98 6.496A5.25 5.25 0 0 0 6.75 20.25H18a4.5 4.5 0 0 0 2.206-8.423 3.75 3.75 0 0 0-4.133-4.303A6.001 6.001 0 0 0 10.5 3.75Zm2.25 6a.75.75 0 0 0-1.5 0v3c0 .414.336.75.75.75h3a.75.75 0 0 0 0-1.5h-1.5V9.75Z" clipRule="evenodd" />
             </svg>
-            <span className="text-sm text-gray-600">Haz clic para seleccionar</span>
-            <input ref={inputRef} type="file" accept=".txt,.pdf,.docx,.csv,.xlsx,.xls" className="hidden" />
+            {selectedFile ? (
+              <span className="text-sm font-medium text-indigo-700">{selectedFile.name}</span>
+            ) : (
+              <span className="text-sm text-gray-600">Haz clic para seleccionar</span>
+            )}
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".txt,.pdf,.docx,.csv,.xlsx,.xls"
+              className="hidden"
+              onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
+            />
           </label>
 
           <button
