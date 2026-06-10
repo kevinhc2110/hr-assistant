@@ -342,44 +342,58 @@ hr-assistant/
 │   └── sample_company_policy.txt
 ├── src/hr_assistant/
 │   ├── __init__.py
-│   ├── main.py                            # FastAPI entrypoint + lifespan (DB connect) + serves frontend static files
+│   ├── main.py                            # FastAPI entrypoint + lifespan + serves frontend
 │   ├── api/
+│   │   ├── dependencies.py                # FastAPI Depends() wiring (DI container)
 │   │   ├── routers/
-│   │   │   ├── chat_router.py             # WS /chat/ws, GET /chat/conversations, GET /chat/messages
+│   │   │   ├── chat_router.py             # WS /chat/ws, GET /chat/*, POST /chat/chat
 │   │   │   └── documents_router.py        # POST /documents/upload
 │   │   └── schemas/
 │   │       ├── chat_schema.py             # ChatRequest/Response, ConversationResponse, MessageResponse
 │   │       └── document_schema.py         # Upload response model
-│   ├── application/use_cases/
-│   │   ├── chat_use_case.py               # Chat orchestration with history + streaming
-│   │   ├── conversations_use_case.py      # List & create conversations
-│   │   ├── ingest_document_use_case.py    # Multi-format ingestion + chunking
-│   │   ├── messages_use_case.py           # List & create messages
-│   │   └── retrieve_context_use_case.py   # Vector search context retrieval
-│   ├── domain/entities/
-│   │   ├── conversation_entity.py         # Conversation dataclass
-│   │   ├── document_entity.py             # Document dataclass
-│   │   └── message_entity.py              # Message dataclass
-│   ├── infrastructure/
-│   │   ├── database/
-│   │   │   ├── base.py                    # Database ABC (connect/disconnect/execute/fetch)
-│   │   │   └── postgres.py                # asyncpg pool implementation
-│   │   ├── llm/
-│   │   │   ├── base.py                    # LLMProvider ABC
-│   │   │   └── gemini_provider.py         # Gemini LLM implementation
-│   │   ├── embeddings/
-│   │   │   ├── base.py                    # EmbeddingProvider ABC
-│   │   │   └── gemini_embeddings.py       # Gemini embedding implementation
-│   │   ├── vectorstore/
-│   │   │   ├── base.py                    # VectorStore ABC
-│   │   │   ├── models.py                  # Vector store data models
-│   │   │   └── pgvector_store.py          # pgvector cosine search implementation
-│   │   └── repositories/
-│   │       ├── chat_repository.py         # Conversations + messages persistence
-│   │       └── document_repository.py     # Document persistence
-│   └── core/
-│       ├── config.py                      # pydantic-settings from .env
-│       └── dependencies.py                # FastAPI Depends() wiring
+│   ├── application/
+│   │   ├── services/
+│   │   │   └── prompt_builder.py          # RAG prompt construction
+│   │   └── use_cases/
+│   │       ├── chat_use_case.py           # Chat orchestration with history + streaming
+│   │       ├── conversations_use_case.py  # List & create conversations
+│   │       ├── ingest_document_use_case.py# Multi-format ingestion + chunking + embedding
+│   │       ├── messages_use_case.py       # List & create messages
+│   │       └── retrieve_context_use_case.py# Vector search context retrieval
+│   ├── domain/
+│   │   ├── entities/
+│   │   │   ├── conversation_entity.py     # Conversation dataclass
+│   │   │   ├── document_entity.py         # Document dataclass
+│   │   │   └── message_entity.py          # Message dataclass
+│   │   ├── models/
+│   │   │   └── chunk_record.py            # ChunkRecord dataclass (search result)
+│   │   └── repositories/                  # Port interfaces (DIP)
+│   │       ├── conversation_repository.py # ConversationRepository ABC
+│   │       ├── document_repository.py     # DocumentRepository ABC
+│   │       └── message_repository.py      # MessageRepository ABC
+│   └── infrastructure/
+│       ├── constants.py                   # System-wide constants (anonymous user ID, prompt)
+│       ├── settings.py                    # pydantic-settings from .env
+│       ├── ai/
+│       │   ├── embeddings/
+│       │   │   ├── base.py                # EmbeddingProvider ABC
+│       │   │   └── gemini_embeddings.py   # Gemini embedding implementation
+│       │   └── llm/
+│       │       ├── base.py                # LLMProvider ABC
+│       │       └── gemini_provider.py     # Gemini LLM implementation
+│       ├── data/
+│       │   ├── base.py                    # Database ABC (connect/disconnect/execute/fetch)
+│       │   ├── postgres.py                # asyncpg pool implementation
+│       │   ├── repositories/              # Adapter implementations (ports → adapters)
+│       │   │   ├── conversation_repository.py
+│       │   │   ├── document_repository.py
+│       │   │   └── message_repository.py
+│       │   └── vectorstore/
+│       │       ├── base.py                # VectorStore ABC
+│       │       ├── models.py              # Re-exports domain ChunkRecord
+│       │       └── pgvector_store.py      # pgvector cosine search
+│       ├── http/                          # HTTP client stubs
+│       └── services/                      # Infrastructure service stubs
 ```
 
 ## License
