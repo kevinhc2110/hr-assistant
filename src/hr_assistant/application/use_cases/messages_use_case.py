@@ -8,15 +8,15 @@ class MessagesUseCase:
 
     def __init__(
         self,
-        chat_repository,
+        message_repository,
     ):
-        self.chat_repository = chat_repository
+        self.message_repository = message_repository
 
     async def execute(
         self,
         conversation_id: str,
     ) -> list[dict]:
-        messages = await self.chat_repository.get_messages(
+        messages = await self.message_repository.get_by_conversation(
             conversation_id=conversation_id,
         )
 
@@ -25,24 +25,24 @@ class MessagesUseCase:
                 "id": message.id,
                 "role": message.role,
                 "content": message.content,
-                "created_at": message.created_at
+                "created_at": message.created_at,
             }
             for message in messages
         ]
-    
+
     async def execute_create(
         self,
         conversation_id: str,
         role: str,
         content: str,
     ) -> Messages:
-        message = await self.chat_repository.save_message(
+        message = await self.message_repository.save(
             Messages(
                 id=str(uuid4()),
                 conversation_id=conversation_id,
                 role=role,
                 content=content,
-                created_at=datetime.now(timezone.utc)
+                created_at=datetime.now(timezone.utc),
             )
         )
 

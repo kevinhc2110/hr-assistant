@@ -5,7 +5,7 @@ from fastapi import File
 
 from hr_assistant.api.schemas.document_schema import UploadDocumentResponse
 from hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
-from hr_assistant.core.dependencies import get_ingest_document_use_case
+from hr_assistant.api.dependencies import get_ingest_document_use_case
 
 router = APIRouter(
     prefix="/documents",

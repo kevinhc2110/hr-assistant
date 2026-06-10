@@ -3,7 +3,7 @@ from uuid import uuid4
 import pytest
 
 from hr_assistant.application.use_cases.retrieve_context_use_case import RetrieveContextUseCase
-from hr_assistant.infrastructure.vectorstore.models import ChunkRecord
+from hr_assistant.domain.models.chunk_record import ChunkRecord
 
 
 class TestRetrieveContextUseCase:

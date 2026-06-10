@@ -1,7 +1,8 @@
 import asyncpg
 from pgvector.asyncpg import register_vector
 
-from hr_assistant.infrastructure.database.base import Database
+from hr_assistant.infrastructure.data.base import Database
+
 
 class PostgresDatabase(Database):
 
@@ -12,7 +13,7 @@ class PostgresDatabase(Database):
     async def connect(self):
         self.pool = await asyncpg.create_pool(
             dsn=self.dsn,
-            init=register_vector
+            init=register_vector,
         )
 
     async def disconnect(self):
@@ -21,7 +22,7 @@ class PostgresDatabase(Database):
     async def execute(self, query: str, *args):
         async with self.pool.acquire() as conn:
             await conn.execute(query, *args)
-    
+
     async def fetch(self, query: str, *args):
         async with self.pool.acquire() as conn:
             return await conn.fetch(query, *args)

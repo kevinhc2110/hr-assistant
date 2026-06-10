@@ -1,9 +1,11 @@
 import json
 
-from hr_assistant.infrastructure.vectorstore.models import ChunkRecord
+from hr_assistant.domain.models.chunk_record import ChunkRecord
+from hr_assistant.infrastructure.data.vectorstore.base import VectorStore
 
 
-class PGVectorStore:
+class PGVectorStore(VectorStore):
+
     def __init__(self, db):
         self.db = db
 
@@ -14,45 +16,33 @@ class PGVectorStore:
         embedding: list[float],
         metadata: dict | None = None,
     ) -> None:
-
         await self.db.execute(
             """
-            INSERT INTO chunks (
-                document_id,
-                content,
-                embedding,
-                metadata
-            )
+            INSERT INTO chunks (document_id, content, embedding, metadata)
             VALUES ($1, $2, $3, $4)
             """,
             document_id,
             content,
             embedding,
-            json.dumps(metadata) if metadata else None
+            json.dumps(metadata) if metadata else None,
         )
 
     async def search(
         self,
         embedding: list[float],
-        top_k: int = 5
+        top_k: int = 5,
     ) -> list[ChunkRecord]:
-
         rows = await self.db.fetch(
             """
-            SELECT
-                id,
-                document_id,
-                content,
-                metadata,
-                embedding <-> $1 AS score
+            SELECT id, document_id, content, metadata,
+                   embedding <-> $1 AS score
             FROM chunks
             ORDER BY score
-            LIMIT $2;
+            LIMIT $2
             """,
             embedding,
-            top_k
+            top_k,
         )
-
         return [
             ChunkRecord(
                 id=r["id"],
@@ -62,4 +52,3 @@ class PGVectorStore:
             )
             for r in rows
         ]
-

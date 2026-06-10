@@ -5,4 +5,3 @@ class EmbeddingProvider(ABC):
     @abstractmethod
     def embed(self, text: str) -> list[float]:
         pass
-        

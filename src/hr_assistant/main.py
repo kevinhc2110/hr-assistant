@@ -5,8 +5,8 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from hr_assistant.api.routers.chat_router import router as chat_router
 from hr_assistant.api.routers.documents_router import router as document_router
-from hr_assistant.core.config import settings
-from hr_assistant.infrastructure.database.postgres import PostgresDatabase
+from hr_assistant.infrastructure.data.postgres import PostgresDatabase
+from hr_assistant.infrastructure.settings import settings
 
 
 @asynccontextmanager

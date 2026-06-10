@@ -1,16 +1,23 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from fastapi import Depends
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 
-from hr_assistant.api.schemas.chat_schema import ChatRequest, ChatResponse, ConversationResponse, MessageResponse
+from hr_assistant.api.schemas.chat_schema import (
+    ChatRequest,
+    ChatResponse,
+    ConversationResponse,
+    MessageResponse,
+)
 from hr_assistant.application.use_cases.chat_use_case import ChatUseCase
 from hr_assistant.application.use_cases.conversations_use_case import ConversationsUseCase
 from hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
-from hr_assistant.core.dependencies import get_chat_use_case, get_conversations_use_case, get_messages_use_case
-
-router = APIRouter(
-    prefix="/chat",
-    tags=["Chat"],
+from hr_assistant.api.dependencies import (
+    get_chat_use_case,
+    get_conversations_use_case,
+    get_messages_use_case,
 )
+from hr_assistant.infrastructure.constants import ANONYMOUS_USER_ID
+
+router = APIRouter(prefix="/chat", tags=["Chat"])
+
 
 @router.get(
     "/conversations",
@@ -18,12 +25,9 @@ router = APIRouter(
 )
 async def conversations(
     user_id: str = Query(...),
-    use_case: ConversationsUseCase = Depends(
-        get_conversations_use_case
-    ),
+    use_case: ConversationsUseCase = Depends(get_conversations_use_case),
 ):
     convs = await use_case.execute(user_id=user_id)
-
     return [
         ConversationResponse(
             id=c["id"],
@@ -39,12 +43,9 @@ async def conversations(
 )
 async def messages(
     conversation_id: str = Query(...),
-    use_case: MessagesUseCase = Depends(
-        get_messages_use_case
-    ),
+    use_case: MessagesUseCase = Depends(get_messages_use_case),
 ):
     msgs = await use_case.execute(conversation_id=conversation_id)
-
     return [
         MessageResponse(
             id=m["id"],
@@ -55,6 +56,7 @@ async def messages(
         for m in msgs
     ]
 
+
 @router.post("/chat")
 async def chat(
     request: ChatRequest,
@@ -64,11 +66,11 @@ async def chat(
         question=request.message,
         conversation_id=request.conversation_id,
     )
-
     return ChatResponse(
         conversation_id=answer["conversation_id"],
         answer=answer["answer"],
     )
+
 
 @router.websocket("/ws")
 async def chat_websocket(
@@ -79,32 +81,31 @@ async def chat_websocket(
     await websocket.accept()
 
     existing = await use_case_conversations.execute(
-        user_id="00000000-0000-0000-0000-000000000000",
+        user_id=ANONYMOUS_USER_ID,
     )
 
     if existing:
         conversation_id = existing[0]["id"]
     else:
         conversation = await use_case_conversations.execute_create(
-            user_id="00000000-0000-0000-0000-000000000000",
+            user_id=ANONYMOUS_USER_ID,
         )
         conversation_id = conversation.id
 
     await websocket.send_json({
         "type": "conversation_created",
-        "conversation_id": conversation_id,
+        "conversation_id": str(conversation_id),
     })
 
     try:
         while True:
             data = await websocket.receive_json()
-
             question = data.get("message", "").strip()
 
             if not question:
                 await websocket.send_json({
                     "type": "error",
-                    "message": "message is required"
+                    "message": "message is required",
                 })
                 continue
 
@@ -114,14 +115,10 @@ async def chat_websocket(
             ):
                 await websocket.send_json({
                     "type": "chunk",
-                    "content": chunk
+                    "content": chunk,
                 })
 
-            await websocket.send_json(
-                {
-                    "type": "done",
-                }
-            )
+            await websocket.send_json({"type": "done"})
 
     except WebSocketDisconnect:
         pass

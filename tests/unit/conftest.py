@@ -6,16 +6,22 @@ import pytest
 
 from hr_assistant.domain.entities.conversation_entity import Conversation
 from hr_assistant.domain.entities.message_entity import Messages
-from hr_assistant.infrastructure.vectorstore.models import ChunkRecord
+from hr_assistant.domain.models.chunk_record import ChunkRecord
 
 
 @pytest.fixture
-def mock_chat_repository():
+def mock_conversation_repository():
     repo = MagicMock()
-    repo.save_conversation = AsyncMock()
-    repo.save_message = AsyncMock()
-    repo.get_conversations = AsyncMock()
-    repo.get_messages = AsyncMock()
+    repo.save = AsyncMock()
+    repo.get_by_user = AsyncMock()
+    return repo
+
+
+@pytest.fixture
+def mock_message_repository():
+    repo = MagicMock()
+    repo.save = AsyncMock()
+    repo.get_by_conversation = AsyncMock()
     return repo
 
 
@@ -118,7 +124,7 @@ def mock_messages_use_case():
 @pytest.fixture
 def mock_document_repository():
     repo = MagicMock()
-    repo.save_document = AsyncMock()
+    repo.save = AsyncMock()
     return repo
 
 

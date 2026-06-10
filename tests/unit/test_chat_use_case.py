@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from hr_assistant.application.use_cases.chat_use_case import ChatUseCase
-from hr_assistant.domain.entities.message_entity import Messages
+from hr_assistant.infrastructure.constants import ANONYMOUS_USER_ID
 
 
 class TestChatUseCase:
@@ -24,7 +24,7 @@ class TestChatUseCase:
         assert result["answer"] == "Esta es una respuesta de prueba."
 
         mock_conversations_use_case.execute_create.assert_awaited_once_with(
-            user_id="00000000-0000-0000-0000-000000000000",
+            user_id=ANONYMOUS_USER_ID,
         )
         assert mock_messages_use_case.execute.await_count == 1
         assert mock_messages_use_case.execute_create.await_count == 2

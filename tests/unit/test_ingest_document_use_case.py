@@ -34,7 +34,7 @@ class TestIngestDocumentUseCase:
             assert "id" in result
             assert result["filename"] == "policy.txt"
 
-            mock_document_repository.save_document.assert_awaited_once()
+            mock_document_repository.save.assert_awaited_once()
             assert mock_embedding_provider.embed_batch.await_count == 1
             assert mock_vector_store.add.await_count == 1
 
@@ -52,7 +52,7 @@ class TestIngestDocumentUseCase:
             result = await use_case.execute(file=file)
 
             assert result["filename"] == "empty.txt"
-            mock_document_repository.save_document.assert_awaited_once()
+            mock_document_repository.save.assert_awaited_once()
             mock_embedding_provider.embed_batch.assert_awaited_once_with([])
             mock_vector_store.add.assert_not_awaited()
 

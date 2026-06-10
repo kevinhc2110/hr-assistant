@@ -13,8 +13,8 @@ from hr_assistant.application.use_cases.conversations_use_case import Conversati
 from hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
 from hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
 from hr_assistant.domain.entities.conversation_entity import Conversation
-from hr_assistant.infrastructure.vectorstore.models import ChunkRecord
-from hr_assistant.core.dependencies import (
+from hr_assistant.domain.models.chunk_record import ChunkRecord
+from hr_assistant.api.dependencies import (
     get_chat_use_case,
     get_conversations_use_case,
     get_messages_use_case,

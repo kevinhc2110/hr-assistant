@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 
 
 @dataclass
@@ -7,4 +8,4 @@ class Messages:
     conversation_id: str
     role: str
     content: str
-    created_at: str
+    created_at: datetime
