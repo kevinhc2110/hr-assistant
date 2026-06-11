@@ -23,12 +23,11 @@ RAG-powered HR chatbot built with FastAPI and Google Gemini. Upload company docu
 | Document Parsing | [LlamaIndex](https://www.llamaindex.ai/) (`llama-index-core` + `llama-index-readers-file`), `PyMuPDF`, `python-docx`, `pandas`/`openpyxl`                |
 | Config           | `pydantic-settings` + `.env`                                                                                                                             |
 | Package Manager  | [Poetry](https://python-poetry.org/) (Python >=3.13) / npm                                                                                               |
-| Containerization | [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/) (uses `pgvector/pgvector:pg17`)                                   |
+| Containerization | [Docker](https://www.docker.com/) + [Docker Compose](https://docs.docker.com/compose/)                                                                   |
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/engine/install/) + [Docker Compose](https://docs.docker.com/compose/install/) (recommended)
-- _Or_ Python 3.13+ with [Poetry](https://python-poetry.org/docs/#installation) and a PostgreSQL server with pgvector
+- [Docker](https://docs.docker.com/engine/install/) + [Docker Compose](https://docs.docker.com/compose/install/)
 - A [Google Gemini API key](https://aistudio.google.com/apikey)
 
 ## Getting Started
@@ -49,139 +48,74 @@ cp .env.example .env
 #   postgres_db=hr_assistant
 ```
 
-### Run with Docker (recommended)
-
 ```sh
 docker compose up -d
 ```
 
-This starts PostgreSQL 17 (with pgvector) and the app. The API is available at `http://localhost:8000` and the chat UI loads automatically at the same URL.
+This starts three containers:
 
-Stop with:
+| Container | Service | Access |
+|-----------|---------|--------|
+| `hr-assistant-db` | PostgreSQL 17 + pgvector | Internal |
+| `hr-assistant-app` | FastAPI (backend) | `http://localhost:8000` |
+| `hr-assistant-demo` | nginx (frontend) | `http://localhost:5173` |
+
+Everything runs with a single command — the database boots first (healthcheck), then the app, then the frontend.
+
+### What connects to what
+
+```
+Browser → localhost:5173
+              │
+        nginx (hr-assistant-demo)
+              │
+              ├── / → sirve SPA (index.html)
+              │
+              └── /chat, /documents → proxy_pass → FastAPI (hr-assistant-app)
+                                                      │
+                                                      ▼
+                                              PostgreSQL (hr-assistant-db)
+```
+
+### Stop
 
 ```sh
 docker compose down
 ```
 
-### Run locally (without Docker)
-
-Prerequisites: Python 3.13+, Poetry, PostgreSQL with pgvector.
-
-- Create the database and enable pgvector:
-
-```sql
-CREATE DATABASE hr_assistant;
-\c hr_assistant
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-```
-
-The tables are created automatically by the `db/init.sql` script (mounted to `docker-entrypoint-initdb.d` in Docker). Alternatively, run the SQL manually (see `db/init.sql`).
-
-- Update `.env` so `postgres_dsn` points to `localhost` instead of `db`:
-
-```env
-postgres_dsn=postgresql://kevinhc2110:password@localhost:5432/hr_assistant
-```
-
-- Install dependencies and start:
+To also delete the database volume:
 
 ```sh
-poetry install
-poetry run uvicorn hr_assistant.main:app --reload
+docker compose down -v
 ```
 
-The API is available at `http://localhost:8000`. Open `http://localhost:8000/docs` for the interactive Swagger UI.
-
-## Demo Frontend
-
-A modern chat UI built with **React 19**, **TypeScript**, and **Tailwind CSS v4**, served via Vite with integrated WebSocket streaming.
-
-### Features Frontend
-
-- **Real-time streaming** — Messages appear token by token as the backend generates them.
-- **Markdown rendering** — Assistant responses (lists, bold, tables, etc.) are rendered with `react-markdown` + `remark-gfm`.
-- **Conversation persistence** — On load, the UI fetches existing conversations and messages via REST, then (re)connects the WebSocket for new messages.
-- **Single conversation per user** — Simplified UX: no "new chat" button; the existing conversation is reused.
-- **Document upload** — Upload `.txt`, `.pdf`, `.docx`, `.csv`, `.xlsx` files directly from the sidebar.
-- **Responsive layout** — Collapsible sidebar, auto-scroll to latest message, loading indicators.
-
-### Prerequisites Frontend
-
-- Node.js 18+ with npm
-
-### Run locally (development)
-
-With the backend running outside Docker, start the Vite dev server for hot-reload:
+### View logs
 
 ```sh
-cd demo
-npm install
-npm run dev
+docker compose logs -f        # all services
+docker compose logs -f app    # just the backend
 ```
 
-The UI is available at `http://localhost:5173`. The Vite proxy forwards `/chat/*` and `/documents/*` requests to `http://localhost:8000`, and WebSocket connections are proxied automatically.
+## Usage
 
-> **With Docker** the frontend is pre-built and served directly from the same container — no separate dev server needed.
+1. Open `http://localhost:5173` in your browser
+2. Upload a document (e.g. `examples/sample_company_policy.txt`) via the sidebar
+3. Ask HR-related questions in Spanish (or any language)
 
-### Project structure
+Swagger UI at `http://localhost:8000/docs`.
 
-```text
-demo/
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts              # Vite config with dev proxy (ws: true)
-├── src/
-│   ├── main.tsx                # React entry point
-│   ├── App.tsx                 # Layout: Sidebar + ChatArea + UploadModal
-│   ├── hooks/
-│   │   └── useChat.ts          # WebSocket + REST chat hook with streaming
-│   ├── components/
-│   │   ├── Sidebar.tsx         # Conversation info + upload button
-│   │   ├── ChatInput.tsx       # Message input with send button
-│   │   ├── MessageBubble.tsx   # Renders a single message (user or assistant)
-│   │   └── UploadModal.tsx     # File upload modal with drag-and-drop
-│   └── styles/
-│       └── index.css           # Tailwind CSS v4 import
-```
+### Example questions
 
-## Testing
-
-Tests use **pytest** with **pytest-asyncio** (async mode auto-enabled). All unit tests mock external dependencies; integration tests mock use cases via FastAPI dependency overrides.
-
-### Run all tests
-
-```sh
-poetry run pytest
-```
-
-### Run unit tests only
-
-```sh
-poetry run pytest tests/unit/
-```
-
-| Test file                           | What it covers                                                      |
-| ----------------------------------- | ------------------------------------------------------------------- |
-| `test_domain_entities.py`           | `Conversation`, `Document`, `Messages` dataclass construction       |
-| `test_schemas.py`                   | Pydantic request/response schema validation                         |
-| `test_chat_use_case.py`             | Chat orchestration: new/reused convs, context retrieval, LLM prompt |
-| `test_conversations_use_case.py`    | Conversation listing                                                |
-| `test_messages_use_case.py`         | Message history retrieval                                           |
-| `test_ingest_document_use_case.py`  | Document ingestion flow (parsing, chunking, embedding, storing)     |
-| `test_retrieve_context_use_case.py` | Vector search context retrieval                                     |
-
-### Run integration tests only
-
-```sh
-poetry run pytest tests/integration/
-```
-
-| Test file                  | What it covers                                                  |
-| -------------------------- | --------------------------------------------------------------- |
-| `test_chat_router.py`      | `GET /chat/conversations`, `GET /chat/messages`, WebSocket chat |
-| `test_documents_router.py` | `POST /documents/upload` with `.txt` / `.pdf` and edge cases    |
+- ¿Cuántos días de vacaciones tienen los empleados por año?
+- ¿Puedo acumular los días de vacaciones no utilizados para el próximo año?
+- ¿Cuántos días de incapacidad por enfermedad me corresponden?
+- ¿Necesito un certificado médico para la incapacidad?
+- ¿Puedo trabajar desde casa? ¿Cuántos días por semana?
+- ¿La empresa ofrece subsidio o apoyo para trabajo remoto?
+- ¿Qué planes de seguro de salud están disponibles?
+- ¿Cuánto tiempo debo trabajar en la empresa para acceder a la licencia de paternidad/maternidad?
+- ¿Existe un presupuesto de capacitación para cursos y conferencias?
+- ¿Qué sucede si incumplo el Código de Conducta?
 
 ## API Endpoints
 
@@ -256,18 +190,31 @@ curl -X POST http://localhost:8000/documents/upload \
 
 Supported formats: `.txt`, `.pdf`, `.docx`, `.csv`, `.xlsx`, `.xls`.
 
-### Example questions (spanish)
+## Frontend (Demo)
 
-- ¿Cuántos días de vacaciones tienen los empleados por año?
-- ¿Puedo acumular los días de vacaciones no utilizados para el próximo año?
-- ¿Cuántos días de incapacidad por enfermedad me corresponden?
-- ¿Necesito un certificado médico para la incapacidad?
-- ¿Puedo trabajar desde casa? ¿Cuántos días por semana?
-- ¿La empresa ofrece subsidio o apoyo para trabajo remoto?
-- ¿Qué planes de seguro de salud están disponibles?
-- ¿Cuánto tiempo debo trabajar en la empresa para acceder a la licencia de paternidad/maternidad?
-- ¿Existe un presupuesto de capacitación para cursos y conferencias?
-- ¿Qué sucede si incumplo el Código de Conducta?
+A modern chat UI built with **React 19**, **TypeScript**, and **Tailwind CSS v4**, served via nginx with integrated WebSocket streaming.
+
+### Features
+
+- **Real-time streaming** — Messages appear token by token as the backend generates them.
+- **Markdown rendering** — Assistant responses (lists, bold, tables, etc.) are rendered with `react-markdown` + `remark-gfm`.
+- **Conversation persistence** — On load, the UI fetches existing conversations and messages via REST, then (re)connects the WebSocket for new messages.
+- **Single conversation per user** — Simplified UX: no "new chat" button; the existing conversation is reused.
+- **Document upload** — Upload `.txt`, `.pdf`, `.docx`, `.csv`, `.xlsx` files directly from the sidebar.
+- **Responsive layout** — Collapsible sidebar, auto-scroll to latest message, loading indicators.
+
+### Architecture
+
+```
+demo/                     # React source (mounted in Docker build)
+├── Dockerfile            # Multi-stage: builds with Node, serves with nginx
+├── nginx.conf            # Reverse proxy: frontend (/) → FastAPI (/chat, /documents)
+└── src/
+```
+
+Nginx handles:
+- Static files (`/` → SPA with `try_files $uri /index.html`)
+- API proxy (`/chat/*` and `/documents/*` → `http://app:8000`)
 
 ## Database Schema
 
@@ -324,76 +271,43 @@ A seed anonymous user (`00000000-0000-0000-0000-000000000000`) is inserted on se
 
 ```text
 hr-assistant/
-├── Dockerfile                            # Multi-stage: builds frontend (node) + backend (python)
-├── docker-compose.yml
+├── Dockerfile                            # Python backend container
+├── docker-compose.yml                    # Orchestrates db + app + demo
+├── .env.example
 ├── .dockerignore
-├── .gitignore
-├── AGENTS.md                              # AI agent instructions
+├── AGENTS.md
 ├── LICENSE
 ├── pyproject.toml
 ├── poetry.lock
 ├── db/
-│   └── init.sql                           # DB schema (5 tables + pgvector index)
-├── demo/                                 # React frontend (built into dist/ during Docker build)
-│   ├── src/
+│   ├── Dockerfile                        # PostgreSQL + pgvector
+│   └── init.sql                          # Schema (5 tables + index)
+├── demo/                                 # React frontend
+│   ├── Dockerfile                        # Build + nginx serve
+│   ├── nginx.conf                        # Reverse proxy config
 │   ├── package.json
-│   └── vite.config.ts
+│   ├── vite.config.ts
+│   └── src/
 ├── examples/
 │   └── sample_company_policy.txt
 ├── src/hr_assistant/
-│   ├── __init__.py
-│   ├── main.py                            # FastAPI entrypoint + lifespan + serves frontend
+│   ├── main.py                           # FastAPI entrypoint
 │   ├── api/
-│   │   ├── dependencies.py                # FastAPI Depends() wiring (DI container)
-│   │   ├── routers/
-│   │   │   ├── chat_router.py             # WS /chat/ws, GET /chat/*, POST /chat/chat
-│   │   │   └── documents_router.py        # POST /documents/upload
-│   │   └── schemas/
-│   │       ├── chat_schema.py             # ChatRequest/Response, ConversationResponse, MessageResponse
-│   │       └── document_schema.py         # Upload response model
+│   │   ├── routers/                      # chat_router.py, documents_router.py
+│   │   └── schemas/                      # Pydantic models
 │   ├── application/
-│   │   ├── services/
-│   │   │   └── prompt_builder.py          # RAG prompt construction
-│   │   └── use_cases/
-│   │       ├── chat_use_case.py           # Chat orchestration with history + streaming
-│   │       ├── conversations_use_case.py  # List & create conversations
-│   │       ├── ingest_document_use_case.py# Multi-format ingestion + chunking + embedding
-│   │       ├── messages_use_case.py       # List & create messages
-│   │       └── retrieve_context_use_case.py# Vector search context retrieval
+│   │   ├── services/prompt_builder.py
+│   │   └── use_cases/                    # chat, conversations, messages, ingest, retrieve
 │   ├── domain/
-│   │   ├── entities/
-│   │   │   ├── conversation_entity.py     # Conversation dataclass
-│   │   │   ├── document_entity.py         # Document dataclass
-│   │   │   └── message_entity.py          # Message dataclass
-│   │   ├── models/
-│   │   │   └── chunk_record.py            # ChunkRecord dataclass (search result)
-│   │   └── repositories/                  # Port interfaces (DIP)
-│   │       ├── conversation_repository.py # ConversationRepository ABC
-│   │       ├── document_repository.py     # DocumentRepository ABC
-│   │       └── message_repository.py      # MessageRepository ABC
+│   │   ├── entities/                     # Conversation, Document, Message
+│   │   ├── models/chunk_record.py
+│   │   └── repositories/                 # Port interfaces (ABCs)
 │   └── infrastructure/
-│       ├── constants.py                   # System-wide constants (anonymous user ID, prompt)
-│       ├── settings.py                    # pydantic-settings from .env
-│       ├── ai/
-│       │   ├── embeddings/
-│       │   │   ├── base.py                # EmbeddingProvider ABC
-│       │   │   └── gemini_embeddings.py   # Gemini embedding implementation
-│       │   └── llm/
-│       │       ├── base.py                # LLMProvider ABC
-│       │       └── gemini_provider.py     # Gemini LLM implementation
-│       ├── data/
-│       │   ├── base.py                    # Database ABC (connect/disconnect/execute/fetch)
-│       │   ├── postgres.py                # asyncpg pool implementation
-│       │   ├── repositories/              # Adapter implementations (ports → adapters)
-│       │   │   ├── conversation_repository.py
-│       │   │   ├── document_repository.py
-│       │   │   └── message_repository.py
-│       │   └── vectorstore/
-│       │       ├── base.py                # VectorStore ABC
-│       │       ├── models.py              # Re-exports domain ChunkRecord
-│       │       └── pgvector_store.py      # pgvector cosine search
-│       ├── http/                          # HTTP client stubs
-│       └── services/                      # Infrastructure service stubs
+│       ├── constants.py
+│       ├── settings.py
+│       ├── ai/                           # Gemini LLM + embeddings
+│       ├── data/                         # asyncpg pool + repository adapters
+│       └── services/
 ```
 
 ## License

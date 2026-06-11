@@ -1,6 +1,6 @@
 services:
   db:
-    image: pgvector/pgvector:pg17
+    build: ./db
     container_name: hr-assistant-db
     restart: unless-stopped
 
@@ -14,7 +14,6 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
 
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${postgres_user} -d ${postgres_db}"]
@@ -30,14 +29,20 @@ services:
       db:
         condition: service_healthy
 
+    env_file: .env
+
     ports:
       - "8000:8000"
 
-    env_file: .env
+    restart: unless-stopped
 
-    volumes:
-      - ./src:/app/src
-
+  demo:
+    build: ./demo
+    container_name: hr-assistant-demo
+    ports:
+      - "5173:80"
+    depends_on:
+      - app
     restart: unless-stopped
 
 volumes:

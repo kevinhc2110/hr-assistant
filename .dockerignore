@@ -18,3 +18,7 @@
 Thumbs.db
 
 *.log
+
+demo/
+db/
+docker-compose.yml
