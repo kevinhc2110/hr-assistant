@@ -3,7 +3,7 @@ from collections.abc import AsyncGenerator
 from google import genai
 from google.genai import types
 
-from hr_assistant.infrastructure.ai.llm.base import LLMProvider
+from hr_assistant.domain.services.llm_provider import LLMProvider
 from hr_assistant.infrastructure.constants import HR_SYSTEM_PROMPT
 
 

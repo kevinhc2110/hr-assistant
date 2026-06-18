@@ -1,11 +1,12 @@
 from hr_assistant.domain.models.chunk_record import ChunkRecord
+from hr_assistant.domain.services.embedding_provider import EmbeddingProvider
 
 
 class RetrieveContextUseCase:
 
     def __init__(
         self,
-        embedding_provider,
+        embedding_provider: EmbeddingProvider,
         vector_store,
     ):
         self.embedding_provider = embedding_provider

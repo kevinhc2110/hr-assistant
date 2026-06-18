@@ -6,6 +6,8 @@ from hr_assistant.application.use_cases.conversations_use_case import Conversati
 from hr_assistant.application.use_cases.ingest_document_use_case import IngestDocumentUseCase
 from hr_assistant.application.use_cases.messages_use_case import MessagesUseCase
 from hr_assistant.application.use_cases.retrieve_context_use_case import RetrieveContextUseCase
+from hr_assistant.domain.services.embedding_provider import EmbeddingProvider
+from hr_assistant.domain.services.llm_provider import LLMProvider
 from hr_assistant.infrastructure.ai.embeddings.gemini_embeddings import GeminiEmbeddings
 from hr_assistant.infrastructure.ai.llm.gemini_provider import GeminiProvider
 from hr_assistant.infrastructure.data.repositories.conversation_repository import ConversationRepository
@@ -21,7 +23,7 @@ llm_provider = GeminiProvider(
 )
 
 
-def get_llm_provider():
+def get_llm_provider() -> LLMProvider:
     return llm_provider
 
 
@@ -47,7 +49,7 @@ embedding_provider = GeminiEmbeddings(
 )
 
 
-def get_embedding_provider():
+def get_embedding_provider() -> EmbeddingProvider:
     return embedding_provider
 
 

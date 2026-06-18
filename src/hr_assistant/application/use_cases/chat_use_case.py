@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator
 
 from hr_assistant.application.services.prompt_builder import PromptBuilder
+from hr_assistant.domain.services.llm_provider import LLMProvider
 from hr_assistant.infrastructure.constants import ANONYMOUS_USER_ID
 
 
@@ -8,7 +9,7 @@ class ChatUseCase:
 
     def __init__(
         self,
-        llm_provider,
+        llm_provider: LLMProvider,
         conversations_use_case,
         messages_use_case,
         retrieve_context_use_case,

@@ -11,6 +11,7 @@ from llama_index.core.schema import Document as LlamaDocument
 from llama_index.readers.file import DocxReader, PandasCSVReader, PDFReader
 
 from hr_assistant.domain.entities.document_entity import Document
+from hr_assistant.domain.services.embedding_provider import EmbeddingProvider
 
 
 class IngestDocumentUseCase:
@@ -18,7 +19,7 @@ class IngestDocumentUseCase:
     def __init__(
         self,
         document_repository,
-        embedding_provider,
+        embedding_provider: EmbeddingProvider,
         vector_store,
     ):
         self.document_repository = document_repository
